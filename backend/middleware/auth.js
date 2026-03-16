@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const asyncHandler = require("../utils/asyncHandler");
+const ErrorResponse = require("../utils/errorResponse");
 
 // Protect routes
 exports.protect = asyncHandler(async (req, res, next) => {
@@ -27,7 +28,11 @@ exports.protect = asyncHandler(async (req, res, next) => {
 		// Verify token
 		const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-		req.user = await User.findById(decoded.id);
+		req.user = await User.findById(decoded.id).select("-password");
+
+		if (!req.user) {
+			return next(new ErrorResponse("User not found", 401));
+		}
 
 		next();
 	} catch (err) {

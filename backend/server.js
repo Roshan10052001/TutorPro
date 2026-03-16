@@ -43,13 +43,13 @@ if (process.env.NODE_ENV === "development") {
 }
 
 //Routes
-const authRoutes = require("./routes/auth");
-const tutorRoutes = require("./routes/tutor");
-const bookingRoutes = require("./routes/booking");
+// const authRoutes = require("./routes/auth");
+// const tutorRoutes = require("./routes/tutor");
+// const bookingRoutes = require("./routes/booking");
 
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/tutors", tutorRoutes);
-app.use("/api/v1/bookings", bookingRoutes);
+// app.use("/api/v1/auth", authRoutes);
+// app.use("/api/v1/tutors", tutorRoutes);
+// app.use("/api/v1/bookings", bookingRoutes);
 
 // Health check
 app.get("/", (req, res) => {
