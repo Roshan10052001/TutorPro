@@ -1,0 +1,58 @@
+.navbar {
+    width: 100%;
+    padding: 22px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.brand-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--billiken-blue), var(--billiken-light));
+    color: white;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    box-shadow: 0 8px 20px rgba(13, 71, 161, 0.22);
+}
+
+.navbar-brand h2 {
+    font-size: 1.1rem;
+}
+
+.navbar-brand p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.navbar-links {
+    display: flex;
+    gap: 22px;
+}
+
+.navbar-links a {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.navbar-links a:hover {
+    color: var(--billiken-blue);
+}
+
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        gap: 18px;
+        padding: 20px;
+    }
+}
