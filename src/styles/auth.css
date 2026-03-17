@@ -1,68 +1,32 @@
-.auth-page {
-    min-height: calc(100vh - 92px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 30px 16px 60px;
+.error-text {
+  display: block;
+  margin-top: 6px;
+  margin-bottom: 12px;
+  color: #d32f2f;
+  font-size: 14px;
+  font-weight: 500;
 }
 
-.auth-card {
-    width: 100%;
-    max-width: 460px;
-    padding: 34px;
+.password-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.auth-card h1 {
-    font-size: 2rem;
-    margin-bottom: 10px;
+.password-wrapper input {
+  flex: 1;
 }
 
-.auth-card>p {
-    color: var(--text-secondary);
-    margin-bottom: 24px;
+.toggle-password-btn {
+  padding: 10px 14px;
+  border: 1px solid #cfcfcf;
+  background: #ffffff;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s ease;
 }
 
-.auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.auth-form label {
-    font-weight: 600;
-    margin-top: 6px;
-}
-
-.auth-form input,
-.auth-form select {
-    padding: 14px 16px;
-    border-radius: 14px;
-    border: 1px solid rgba(148, 163, 184, 0.28);
-    background: rgba(255, 255, 255, 0.9);
-    outline: none;
-}
-
-.auth-form input:focus,
-.auth-form select:focus {
-    border-color: var(--billiken-light);
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
-}
-
-.auth-footer {
-    margin-top: 20px;
-    text-align: center;
-    color: var(--text-secondary);
-}
-
-.auth-footer a {
-    color: var(--billiken-blue);
-    font-weight: 600;
-}
-
-.logout-card {
-    text-align: center;
-}
-
-.logout-card .primary-btn {
-    margin-top: 16px;
+.toggle-password-btn:hover {
+  background: #f3f6fb;
 }

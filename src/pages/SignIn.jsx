@@ -5,18 +5,50 @@ import '../styles/auth.css'
 
 function SignIn() {
   const navigate = useNavigate()
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     role: 'student'
   })
 
+  const [errors, setErrors] = useState({})
+  const [showPassword, setShowPassword] = useState(false)
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    setFormData({ ...formData, [name]: value })
+
+    // clear error while typing
+    setErrors((prev) => ({
+      ...prev,
+      [name]: ''
+    }))
+  }
+
+  const validateForm = () => {
+    const newErrors = {}
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required'
+    } else if (!formData.email.endsWith('@slu.edu')) {
+      newErrors.email = 'Please enter a valid SLU email'
+    }
+
+    if (!formData.password.trim()) {
+      newErrors.password = 'Password is required'
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = (e) => {
     e.preventDefault()
+
+    if (!validateForm()) return
 
     if (formData.role === 'student') navigate('/student-dashboard')
     if (formData.role === 'tutor') navigate('/tutor-dashboard')
@@ -40,18 +72,27 @@ function SignIn() {
               placeholder="Enter your SLU email"
               value={formData.email}
               onChange={handleChange}
-              required
             />
+            {errors.email && <span className="error-text">{errors.email}</span>}
 
             <label>Password</label>
-            <input
-              type="password"
-              name="password"
-              placeholder="Enter your password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
+            <div className="password-wrapper">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                placeholder="Enter your password"
+                value={formData.password}
+                onChange={handleChange}
+              />
+              <button
+                type="button"
+                className="toggle-password-btn"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
+            {errors.password && <span className="error-text">{errors.password}</span>}
 
             <label>Role</label>
             <select name="role" value={formData.role} onChange={handleChange}>
@@ -60,7 +101,9 @@ function SignIn() {
               <option value="admin">Admin</option>
             </select>
 
-            <button type="submit" className="primary-btn full-width">Sign In</button>
+            <button type="submit" className="primary-btn full-width">
+              Sign In
+            </button>
           </form>
 
           <p className="auth-footer">
