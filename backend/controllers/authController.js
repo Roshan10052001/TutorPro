@@ -2,6 +2,7 @@ const User = require("../models/User");
 const generateToken = require("../utils/generateToken");
 const ErrorResponse = require("../utils/errorResponse");
 const asyncHandler = require("../utils/asyncHandler");
+const sendTokenResponse = require("../utils/sendTokenResponse");
 
 exports.signup = asyncHandler(async (req, res, next) => {
 	const { name, email, password, role } = req.body;

@@ -41,6 +41,10 @@ app.use(cookieParser());
 if (process.env.NODE_ENV === "development") {
 	app.use(morgan("dev"));
 }
+app.use((req, res, next) => {
+	console.log(`${req.method} ${req.originalUrl}`);
+	next();
+});
 
 //Routes
 const authRoutes = require("./routes/auth");
