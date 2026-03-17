@@ -11,7 +11,7 @@ router.post("/login", login);
 router.post("/logout", logout);
 
 // Get current logged-in user
-router.get("/me", protect, async(req, res) {
+router.get("/me", protect, async(req, res) => {
     res.status(200).json({
         success: true,
         user: req.user
