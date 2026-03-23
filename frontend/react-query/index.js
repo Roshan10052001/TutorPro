@@ -1,7 +1,7 @@
 import { QueryCache, QueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 
-function queryErrorHandler(error: unknown): void {
+function queryErrorHandler(error) {
   // const id = "react-query-error";
   const title =
     error instanceof Error ? error.message : "error connecting to server";
