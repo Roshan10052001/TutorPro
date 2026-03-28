@@ -1,32 +1,102 @@
-.error-text {
-  display: block;
-  margin-top: 6px;
-  margin-bottom: 12px;
-  color: #d32f2f;
-  font-size: 14px;
-  font-weight: 500;
+.auth-page {
+    min-height: calc(100vh - 92px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 16px 60px;
 }
 
-.password-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.auth-card {
+    width: 100%;
+    max-width: 460px;
+    padding: 34px;
+    border-radius: 28px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.92));
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
 }
 
-.password-wrapper input {
-  flex: 1;
+.auth-card h1 {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
 }
 
-.toggle-password-btn {
-  padding: 10px 14px;
-  border: 1px solid #cfcfcf;
-  background: #ffffff;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: 0.2s ease;
+.auth-card>p {
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+    line-height: 1.6;
 }
 
-.toggle-password-btn:hover {
-  background: #f3f6fb;
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.auth-form label {
+    font-weight: 700;
+    margin-top: 6px;
+    color: var(--text-primary);
+}
+
+.auth-form input,
+.auth-form select {
+    padding: 14px 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    background: rgba(255, 255, 255, 0.95);
+    outline: none;
+    transition: all 0.2s ease;
+    font: inherit;
+}
+
+.auth-form input:focus,
+.auth-form select:focus {
+    border-color: var(--billiken-light);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+
+.auth-footer {
+    margin-top: 20px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.auth-footer a {
+    color: var(--billiken-blue);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
+}
+
+.logout-card {
+    text-align: center;
+}
+
+.logout-card .primary-btn {
+    margin-top: 16px;
+}
+
+.demo-admin-box {
+    margin-top: 18px;
+    padding: 16px;
+    border-radius: 18px;
+    background: rgba(37, 99, 235, 0.08);
+    border: 1px solid rgba(37, 99, 235, 0.14);
+}
+
+.demo-admin-box h3 {
+    margin-bottom: 10px;
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--billiken-blue-dark);
+}
+
+.demo-admin-box p {
+    margin-bottom: 6px;
+    color: var(--text-secondary);
 }

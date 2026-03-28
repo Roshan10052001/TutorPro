@@ -1,8 +1,13 @@
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import { useApp } from '../context/AppContext'
 import '../styles/auth.css'
 
 function Logout() {
+  const { logoutUser } = useApp()
+
+  logoutUser()
+
   return (
     <div className="page-shell">
       <Navbar />

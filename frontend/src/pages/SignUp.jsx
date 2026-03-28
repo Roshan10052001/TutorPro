@@ -1,115 +1,119 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import Navbar from "../components/Navbar";
-import "../styles/auth.css";
-import { hooks } from "../../hooks";
-import { errorAlert, successAlert } from "../../utils";
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import Navbar from '../components/Navbar'
+import { useApp } from '../context/AppContext'
+import '../styles/auth.css'
 
 function SignUp() {
-	const navigate = useNavigate();
+  const navigate = useNavigate()
+  const { registerUser } = useApp()
 
-	const [formData, setFormData] = useState({
-		name: "",
-		email: "",
-		password: "",
-		role: "student",
-	});
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: 'student'
+  })
 
-	const {
-		mutate: signup,
-		isSuccess,
-		isError,
-		reset,
-		error,
-	} = hooks.useSignup();
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
 
-	const handleChange = (e) => {
-		setFormData({ ...formData, [e.target.name]: e.target.value });
-	};
+  const handleSubmit = (e) => {
+    e.preventDefault()
 
-	const handleSubmit = (e) => {
-		e.preventDefault();
-		signup(formData);
-	};
+    if (formData.password !== formData.confirmPassword) {
+      alert('Passwords do not match.')
+      return
+    }
 
-	if (isSuccess) {
-		reset();
-		if (formData.role === "student") navigate("/student-dashboard");
-		if (formData.role === "tutor") navigate("/tutor-dashboard");
-		if (formData.role === "admin") navigate("/admin-dashboard");
-		successAlert("Signed up successfully");
-	}
-	if (isError) {
-		errorAlert(error);
-		reset();
-	}
+    const result = registerUser({
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+      role: formData.role
+    })
 
-	return (
-		<div className='page-shell'>
-			<Navbar />
+    alert(result.message)
 
-			<main className='auth-page'>
-				<div className='auth-card glass-card'>
-					<h1>Create Account</h1>
-					<p>Join Tutor Pro and start learning smarter.</p>
+    if (!result.ok) return
 
-					<form
-						onSubmit={handleSubmit}
-						className='auth-form'>
-						<label>Full Name</label>
-						<input
-							type='text'
-							name='name'
-							placeholder='Enter your full name'
-							value={formData.name}
-							onChange={handleChange}
-							required
-						/>
+    navigate('/signin')
+  }
 
-						<label>SLU Email</label>
-						<input
-							type='email'
-							name='email'
-							placeholder='Enter your SLU email'
-							value={formData.email}
-							onChange={handleChange}
-							required
-						/>
+  return (
+    <div className="page-shell">
+      <Navbar />
 
-						<label>Password</label>
-						<input
-							type='password'
-							name='password'
-							placeholder='Create your password'
-							value={formData.password}
-							onChange={handleChange}
-							required
-						/>
+      <main className="auth-page">
+        <div className="auth-card glass-card">
+          <h1>Create Account</h1>
+          <p>Create a student or tutor account to start using Tutor Pro.</p>
 
-						<label>Role</label>
-						<select
-							name='role'
-							value={formData.role}
-							onChange={handleChange}>
-							<option value='student'>Student</option>
-							<option value='tutor'>Tutor</option>
-							<option value='admin'>Admin</option>
-						</select>
+          <form onSubmit={handleSubmit} className="auth-form">
+            <label>Name</label>
+            <input
+              type="text"
+              name="name"
+              placeholder="Enter your name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
 
-						<button
-							type='submit'
-							className='primary-btn full-width'>
-							Sign Up
-						</button>
-					</form>
+            <label>Email</label>
+            <input
+              type="email"
+              name="email"
+              placeholder="Enter your email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
 
-					<p className='auth-footer'>
-						Already have an account? <Link to='/signin'>Sign in</Link>
-					</p>
-				</div>
-			</main>
-		</div>
-	);
+            <label>Password</label>
+            <input
+              type="password"
+              name="password"
+              placeholder="Create password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
+
+            <label>Confirm Password</label>
+            <input
+              type="password"
+              name="confirmPassword"
+              placeholder="Confirm password"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              required
+            />
+
+            <label>Role</label>
+            <select
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+            >
+              <option value="student">Student</option>
+              <option value="tutor">Tutor</option>
+            </select>
+
+            <button type="submit" className="primary-btn full-width">
+              Create Account
+            </button>
+          </form>
+
+          <p className="auth-footer">
+            Already have an account? <Link to="/signin">Sign In</Link>
+          </p>
+        </div>
+      </main>
+    </div>
+  )
 }
 
-export default SignUp;
+export default SignUp
