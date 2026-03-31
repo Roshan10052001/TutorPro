@@ -1,5 +1,7 @@
+import { useContext } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { axiosInstance } from "../axiosInstance";
+import { AuthContext } from "../context";
 import { getStoredUser, setStoredUser } from "../storage";
 import { errorAlert, successAlert } from "../utils";
 import { queryKeys } from "../react-query/constants";
@@ -83,22 +85,15 @@ export function useAuthenticatedUser(enabled = true) {
 }
 
 export function useCurrentUserProfile() {
-	const storedUser = getStoredUser();
-	const { data: authenticatedUser } = useAuthenticatedUser(Boolean(storedUser?.token));
-
-	const currentUser = authenticatedUser
-		? {
-				...authenticatedUser,
-				token: storedUser?.token || "",
-		  }
-		: storedUser;
+	const { user, role, isAuthenticated } = useContext(AuthContext);
+	const currentUser = user;
 
 	return {
 		currentUser,
-		currentUserRole: currentUser?.role || "",
+		currentUserRole: role || currentUser?.role || "",
 		currentUserEmail: currentUser?.email || "",
 		currentUserName: currentUser?.name || "",
-		isLoggedIn: Boolean(currentUser),
+		isLoggedIn: Boolean(isAuthenticated),
 	};
 }
 

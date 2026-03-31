@@ -3,19 +3,24 @@ import Sidebar from '../components/Sidebar'
 import StatCard from '../components/StatCard'
 import PageHeader from '../components/PageHeader'
 import EmptyState from '../components/EmptyState'
-import { useApp } from '../context/AppContext'
-import { useApproveTutor, useRejectTutor } from '../hooks/tutor'
+import {
+  useApplications,
+  useApproveTutor,
+  usePendingApplications,
+  useRejectTutor,
+  useResetDemoData,
+  useSessions,
+  useTutorList
+} from '../hooks/tutor'
 import { errorAlert, successAlert } from '../utils'
 import '../styles/dashboard.css'
 
 function AdminDashboard() {
-  const {
-    pendingApplications,
-    tutors,
-    sessions,
-    applications,
-    resetDemoData
-  } = useApp()
+  const pendingApplications = usePendingApplications()
+  const tutors = useTutorList()
+  const sessions = useSessions()
+  const applications = useApplications()
+  const { mutate: resetDemoData } = useResetDemoData()
   const {
     mutate: approveTutor,
     isSuccess: isApproveSuccess,

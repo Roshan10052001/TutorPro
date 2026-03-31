@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import { useContext } from 'react'
+import { AuthContext } from '../context'
 import { useLogin } from '../hooks/auth'
 import '../styles/auth.css'
 
 function SignIn() {
   const navigate = useNavigate()
+  const { authenticate } = useContext(AuthContext)
   const { mutateAsync: loginMutateAsync } = useLogin()
 
   const [formData, setFormData] = useState({
@@ -25,6 +28,12 @@ function SignIn() {
         email: formData.email,
         password: formData.password
       })
+      if (result?.user) {
+        authenticate({
+          ...result.user,
+          token: result.token || ''
+        })
+      }
 
       const role = result?.user?.role
 

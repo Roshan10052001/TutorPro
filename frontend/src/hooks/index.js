@@ -1,10 +1,32 @@
 import { useAuthenticatedUser, useLogin, useSignup } from "./auth";
-import { useApproveTutor, useRejectTutor, useTutors } from "./tutor";
+import {
+	useApplications,
+	useApproveTutor,
+	useApprovedTutors,
+	useBookSession,
+	usePendingApplications,
+	useRejectTutor,
+	useResetDemoData,
+	useSessions,
+	useSubmitTutorApplication,
+	useTutorList,
+	useTutors,
+	useUpdateTutorAvailability,
+} from "./tutor";
 export const hooks = {
 	useLogin,
 	useSignup,
 	useAuthenticatedUser,
 	useTutors,
+	useTutorList,
+	useSessions,
+	useApplications,
+	useApprovedTutors,
+	usePendingApplications,
+	useSubmitTutorApplication,
 	useApproveTutor,
 	useRejectTutor,
+	useBookSession,
+	useUpdateTutorAvailability,
+	useResetDemoData,
 };
