@@ -17,10 +17,10 @@ function SignIn() {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
-    const result = loginUser({
+    const result = await loginUser({
       email: formData.email,
       password: formData.password
     })

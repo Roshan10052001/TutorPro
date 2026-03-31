@@ -1,9 +1,11 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { axiosInstance } from '../axiosInstance'
 import {
   initialTutors,
   initialSessions,
   initialTutorApplications
 } from '../data/mockData'
+import { getStoredUser, removeStoredUser, setStoredUser } from '../storage'
 
 const AppContext = createContext()
 
@@ -16,26 +18,17 @@ function safeRead(key, fallback) {
   }
 }
 
-const defaultAdminUser = {
-  name: 'Admin',
-  email: 'admin@tutorpro.com',
-  password: 'Admin123!',
-  role: 'admin'
+function getErrorMessage(error, fallback) {
+  return error?.response?.data?.message || error?.response?.data?.error || fallback
 }
 
-function getStoredUsers() {
-  const savedUsers = safeRead('tutorProUsers', [])
-  const hasAdmin = savedUsers.some(
-    (user) => user.email.toLowerCase() === defaultAdminUser.email.toLowerCase()
-  )
+function buildStoredAuth(data) {
+  if (!data?.user) return null
 
-  if (!hasAdmin) {
-    const updatedUsers = [defaultAdminUser, ...savedUsers]
-    localStorage.setItem('tutorProUsers', JSON.stringify(updatedUsers))
-    return updatedUsers
+  return {
+    ...data.user,
+    token: data.token || ''
   }
-
-  return savedUsers
 }
 
 export function AppProvider({ children }) {
@@ -51,10 +44,8 @@ export function AppProvider({ children }) {
     safeRead('tutorProApplications', initialTutorApplications)
   )
 
-  const [users, setUsers] = useState(() => getStoredUsers())
-
   const [currentUser, setCurrentUser] = useState(() =>
-    safeRead('loggedInUser', null)
+    getStoredUser()
   )
 
   useEffect(() => {
@@ -70,16 +61,40 @@ export function AppProvider({ children }) {
   }, [applications])
 
   useEffect(() => {
-    localStorage.setItem('tutorProUsers', JSON.stringify(users))
-  }, [users])
-
-  useEffect(() => {
     if (currentUser) {
-      localStorage.setItem('loggedInUser', JSON.stringify(currentUser))
+      setStoredUser(currentUser)
     } else {
-      localStorage.removeItem('loggedInUser')
+      removeStoredUser()
     }
   }, [currentUser])
+
+  useEffect(() => {
+    async function hydrateAuthenticatedUser() {
+      if (!currentUser?.token) return
+
+      try {
+        const { data } = await axiosInstance({
+          url: '/auth/me',
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${currentUser.token}`
+          }
+        })
+
+        if (data?.user) {
+          setCurrentUser((prev) => ({
+            ...data.user,
+            token: prev?.token || currentUser.token
+          }))
+        }
+      } catch (error) {
+        removeStoredUser()
+        setCurrentUser(null)
+      }
+    }
+
+    hydrateAuthenticatedUser()
+  }, [currentUser?.token])
 
   const currentUserRole = currentUser?.role || ''
   const currentUserEmail = currentUser?.email || ''
@@ -95,75 +110,84 @@ export function AppProvider({ children }) {
     [applications]
   )
 
-  const registerUser = ({ name, email, password, role }) => {
-    const cleanEmail = email.trim().toLowerCase()
+  const registerUser = async ({ name, email, password, role }) => {
+    try {
+      const { data } = await axiosInstance({
+        url: '/auth/signup',
+        method: 'POST',
+        data: {
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+          role
+        },
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
 
-    if (role === 'admin') {
+      const storedAuth = buildStoredAuth(data)
+
+      if (storedAuth) {
+        setCurrentUser(storedAuth)
+      }
+
+      return {
+        ok: true,
+        user: storedAuth,
+        message: 'Account created successfully.'
+      }
+    } catch (error) {
       return {
         ok: false,
-        message: 'Admin account cannot be created from sign up.'
+        message: getErrorMessage(error, 'Unable to create account.')
       }
-    }
-
-    const alreadyExists = users.some(
-      (user) => user.email.trim().toLowerCase() === cleanEmail
-    )
-
-    if (alreadyExists) {
-      return {
-        ok: false,
-        message: 'An account with this email already exists.'
-      }
-    }
-
-    const newUser = {
-      id: Date.now(),
-      name: name.trim(),
-      email: cleanEmail,
-      password,
-      role
-    }
-
-    setUsers((prev) => [newUser, ...prev])
-
-    return {
-      ok: true,
-      message: 'Account created successfully.'
     }
   }
 
-  const loginUser = ({ email, password }) => {
-    const cleanEmail = email.trim().toLowerCase()
+  const loginUser = async ({ email, password }) => {
+    try {
+      const { data } = await axiosInstance({
+        url: '/auth/login',
+        method: 'POST',
+        data: {
+          email: email.trim().toLowerCase(),
+          password
+        },
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
 
-    const foundUser = users.find(
-      (user) =>
-        user.email.trim().toLowerCase() === cleanEmail &&
-        user.password === password
-    )
+      const storedAuth = buildStoredAuth(data)
 
-    if (!foundUser) {
+      if (storedAuth) {
+        setCurrentUser(storedAuth)
+      }
+
+      return {
+        ok: true,
+        user: storedAuth
+      }
+    } catch (error) {
       return {
         ok: false,
-        message: 'Invalid email or password.'
+        message: getErrorMessage(error, 'Invalid email or password.')
       }
-    }
-
-    const loggedUser = {
-      name: foundUser.name,
-      email: foundUser.email,
-      role: foundUser.role
-    }
-
-    setCurrentUser(loggedUser)
-
-    return {
-      ok: true,
-      user: loggedUser
     }
   }
 
-  const logoutUser = () => {
-    setCurrentUser(null)
+  const logoutUser = async () => {
+    try {
+      await axiosInstance({
+        url: '/auth/logout',
+        method: 'POST'
+      })
+    } catch (error) {
+      // Clear local auth state even if the backend request fails.
+    } finally {
+      setCurrentUser(null)
+    }
   }
 
   const submitTutorApplication = (applicationData) => {
@@ -344,7 +368,6 @@ export function AppProvider({ children }) {
     tutors,
     sessions,
     applications,
-    users,
     currentUser,
     currentUserRole,
     currentUserEmail,

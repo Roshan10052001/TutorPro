@@ -20,7 +20,7 @@ function SignUp() {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
     if (formData.password !== formData.confirmPassword) {
@@ -28,7 +28,7 @@ function SignUp() {
       return
     }
 
-    const result = registerUser({
+    const result = await registerUser({
       name: formData.name,
       email: formData.email,
       password: formData.password,
