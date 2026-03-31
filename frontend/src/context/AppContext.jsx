@@ -1,10 +1,10 @@
-import { createContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
 	initialTutors,
 	initialSessions,
 	initialTutorApplications,
 } from "../data/mockData";
-import { safeRead } from "./safeRead";
+import { safeRead } from "../utils";
 
 export const AppContext = createContext();
 
@@ -197,4 +197,8 @@ export function AppProvider({ children }) {
 	};
 
 	return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+}
+
+export function useApp() {
+	return useContext(AppContext);
 }

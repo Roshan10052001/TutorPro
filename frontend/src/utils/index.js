@@ -1,6 +1,15 @@
 import { toast } from "react-toastify";
 import { getStoredUser } from "../storage";
 
+export const safeRead = (key, fallback) => {
+	try {
+		const saved = localStorage.getItem(key);
+		return saved ? JSON.parse(saved) : fallback;
+	} catch {
+		return fallback;
+	}
+};
+
 export const getDecodedJWT = () => {
 	try {
 		const token = getStoredUser();
