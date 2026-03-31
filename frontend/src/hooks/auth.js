@@ -2,11 +2,18 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { axiosInstance } from "../axiosInstance";
 import { getStoredUser, setStoredUser } from "../storage";
 import { errorAlert, successAlert } from "../utils";
-import { useContext } from "react";
-import { AuthContext } from "../context";
 import { queryKeys } from "../react-query/constants";
 
-async function signupUser(formData) {
+function buildStoredAuth(data) {
+	if (!data?.user) return null;
+
+	return {
+		...data.user,
+		token: data.token || "",
+	};
+}
+
+export async function signupUserRequest(formData) {
 	const { data } = await axiosInstance({
 		url: "/auth/signup",
 		method: "POST",
@@ -16,14 +23,15 @@ async function signupUser(formData) {
 		},
 	});
 
-	if (data?.user) {
-		setStoredUser(data.user);
+	const storedAuth = buildStoredAuth(data);
+	if (storedAuth) {
+		setStoredUser(storedAuth);
 	}
 
 	return data;
 }
 
-async function loginUser(formData) {
+export async function loginUserRequest(formData) {
 	const { data } = await axiosInstance({
 		url: "/auth/login",
 		method: "POST",
@@ -33,67 +41,95 @@ async function loginUser(formData) {
 		},
 	});
 
-	if (data?.user) {
-		setStoredUser(data.user);
+	const storedAuth = buildStoredAuth(data);
+	if (storedAuth) {
+		setStoredUser(storedAuth);
 	}
 
 	return data;
 }
 
-const userProfile = async () => {
-	const data = await axiosInstance({
+export async function fetchAuthenticatedUserRequest() {
+	const token = getStoredUser()?.token;
+
+	const { data } = await axiosInstance({
 		url: "/auth/me",
 		method: "GET",
 		headers: {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${await getStoredUser()}`,
+			...(token ? { Authorization: `Bearer ${token}` } : {}),
 		},
 	});
 
-	return data;
-};
+	if (data?.user && token) {
+		setStoredUser({
+			...data.user,
+			token,
+		});
+	}
 
-export function useAuthenticatedUser() {
-	const authCtx = useContext(AuthContext);
-	const fallback = undefined;
-	const { data = fallback, refetch } = useQuery({
-		enabled: authCtx.isAuthenticated,
-		queryKey: [queryKeys.user],
-		queryFn: () => userProfile(),
-		onSuccess: () => {
-			// authCtx.updateUser(data);
-		},
-		onError: () => {
-			authCtx.logout();
-		},
+	return data?.user ?? null;
+}
+
+export function useAuthenticatedUser(enabled = true) {
+	const token = getStoredUser()?.token;
+
+	return useQuery({
+		enabled: Boolean(enabled && token),
+		queryKey: [queryKeys.user, token],
+		queryFn: fetchAuthenticatedUserRequest,
+		retry: false,
 	});
-	return { user: data, refetch };
+}
+
+export function useCurrentUserProfile() {
+	const storedUser = getStoredUser();
+	const { data: authenticatedUser } = useAuthenticatedUser(Boolean(storedUser?.token));
+
+	const currentUser = authenticatedUser
+		? {
+				...authenticatedUser,
+				token: storedUser?.token || "",
+		  }
+		: storedUser;
+
+	return {
+		currentUser,
+		currentUserRole: currentUser?.role || "",
+		currentUserEmail: currentUser?.email || "",
+		currentUserName: currentUser?.name || "",
+		isLoggedIn: Boolean(currentUser),
+	};
 }
 
 export function useSignup() {
-	const { mutate, isSuccess, isError, reset, error } = useMutation({
-		mutationFn: signupUser,
-		onSuccess: () => {
-			successAlert("Account created successfully");
+	const { mutate, mutateAsync, isSuccess, isError, reset, error } = useMutation(
+		{
+			mutationFn: signupUserRequest,
+			onSuccess: () => {
+				successAlert("Account created successfully");
+			},
+			onError: (error) => {
+				errorAlert(error);
+			},
 		},
-		onError: (error) => {
-			errorAlert(error);
-		},
-	});
+	);
 
-	return { mutate, isSuccess, isError, reset, error };
+	return { mutate, mutateAsync, isSuccess, isError, reset, error };
 }
 
 export function useLogin() {
-	const { mutate, isSuccess, isError, reset, error } = useMutation({
-		mutationFn: loginUser,
-		onSuccess: () => {
-			successAlert("Signed in successfully");
+	const { mutate, mutateAsync, isSuccess, isError, reset, error } = useMutation(
+		{
+			mutationFn: loginUserRequest,
+			onSuccess: () => {
+				successAlert("Signed in successfully");
+			},
+			onError: (error) => {
+				errorAlert(error);
+			},
 		},
-		onError: (error) => {
-			errorAlert(error);
-		},
-	});
+	);
 
-	return { mutate, isSuccess, isError, reset, error };
+	return { mutate, mutateAsync, isSuccess, isError, reset, error };
 }

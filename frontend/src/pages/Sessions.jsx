@@ -2,14 +2,11 @@ import Sidebar from '../components/Sidebar'
 import SessionCard from '../components/SessionCard'
 import EmptyState from '../components/EmptyState'
 import { useApp } from '../context/AppContext'
+import { useCurrentUserProfile } from '../hooks/auth'
 
 function Sessions() {
-  const {
-    sessions,
-    tutors,
-    currentUserRole,
-    currentUserEmail
-  } = useApp()
+  const { sessions, tutors } = useApp()
+  const { currentUserRole, currentUserEmail } = useCurrentUserProfile()
 
   const sidebarRole =
     currentUserRole === 'admin'

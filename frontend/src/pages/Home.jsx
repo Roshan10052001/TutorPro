@@ -1,11 +1,10 @@
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
-import { useApp } from '../context/AppContext'
+import { useCurrentUserProfile } from '../hooks/auth'
 import '../styles/home.css'
 
 function Home() {
-  const { currentUser, currentUserRole } = useApp()
-  const isLoggedIn = Boolean(currentUser)
+  const { currentUser, currentUserRole, isLoggedIn } = useCurrentUserProfile()
 
   const dashboardPath =
     currentUserRole === 'admin'

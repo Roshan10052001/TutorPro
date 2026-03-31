@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import Sidebar from '../components/Sidebar'
 import { useApp } from '../context/AppContext'
+import { useCurrentUserProfile } from '../hooks/auth'
 
 function TutorApply() {
-  const { submitTutorApplication, currentUserEmail, currentUserName } = useApp()
+  const { submitTutorApplication } = useApp()
+  const { currentUserEmail, currentUserName } = useCurrentUserProfile()
 
   const [formData, setFormData] = useState({
     name: currentUserName,

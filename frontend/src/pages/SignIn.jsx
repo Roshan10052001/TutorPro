@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
-import { useApp } from '../context/AppContext'
+import { useLogin } from '../hooks/auth'
 import '../styles/auth.css'
 
 function SignIn() {
   const navigate = useNavigate()
-  const { loginUser } = useApp()
+  const { mutateAsync: loginMutateAsync } = useLogin()
 
   const [formData, setFormData] = useState({
     email: '',
@@ -20,21 +20,25 @@ function SignIn() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    const result = await loginUser({
-      email: formData.email,
-      password: formData.password
-    })
+    try {
+      const result = await loginMutateAsync({
+        email: formData.email,
+        password: formData.password
+      })
 
-    if (!result.ok) {
-      alert(result.message)
+      const role = result?.user?.role
+
+      if (role === 'student') navigate('/student-dashboard')
+      if (role === 'tutor') navigate('/tutor-dashboard')
+      if (role === 'admin') navigate('/admin-dashboard')
+    } catch (error) {
+      alert(
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        'Invalid email or password.'
+      )
       return
     }
-
-    const role = result.user.role
-
-    if (role === 'student') navigate('/student-dashboard')
-    if (role === 'tutor') navigate('/tutor-dashboard')
-    if (role === 'admin') navigate('/admin-dashboard')
   }
 
   return (

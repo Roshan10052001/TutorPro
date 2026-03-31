@@ -4,16 +4,13 @@ import StatCard from '../components/StatCard'
 import SessionCard from '../components/SessionCard'
 import PageHeader from '../components/PageHeader'
 import { useApp } from '../context/AppContext'
+import { useCurrentUserProfile } from '../hooks/auth'
 import '../styles/dashboard.css'
 
 function TutorDashboard() {
   const navigate = useNavigate()
-  const {
-    tutors,
-    sessions,
-    currentUserEmail,
-    updateTutorAvailability
-  } = useApp()
+  const { tutors, sessions, updateTutorAvailability } = useApp()
+  const { currentUserEmail } = useCurrentUserProfile()
 
   const myTutorProfile = tutors.find(
     (tutor) => tutor.email.trim().toLowerCase() === currentUserEmail.trim().toLowerCase()

@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
-import { useApp } from '../context/AppContext'
+import { useSignup } from '../hooks/auth'
 import '../styles/auth.css'
 
 function SignUp() {
   const navigate = useNavigate()
-  const { registerUser } = useApp()
+  const { mutateAsync: signupMutateAsync } = useSignup()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -28,18 +28,21 @@ function SignUp() {
       return
     }
 
-    const result = await registerUser({
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      role: formData.role
-    })
-
-    alert(result.message)
-
-    if (!result.ok) return
-
-    navigate('/signin')
+    try {
+      await signupMutateAsync({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role
+      })
+      navigate('/signin')
+    } catch (error) {
+      alert(
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        'Unable to create account.'
+      )
+    }
   }
 
   return (

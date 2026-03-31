@@ -1,15 +1,13 @@
 import { Link } from 'react-router-dom'
 import { useEffect } from 'react'
 import Navbar from '../components/Navbar'
-import { useApp } from '../context/AppContext'
+import { removeStoredUser } from '../storage'
 import '../styles/auth.css'
 
 function Logout() {
-  const { logoutUser } = useApp()
-
   useEffect(() => {
-    logoutUser()
-  }, [logoutUser])
+    removeStoredUser()
+  }, [])
 
   return (
     <div className="page-shell">

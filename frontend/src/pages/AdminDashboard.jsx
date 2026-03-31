@@ -1,8 +1,11 @@
+import { useEffect } from 'react'
 import Sidebar from '../components/Sidebar'
 import StatCard from '../components/StatCard'
 import PageHeader from '../components/PageHeader'
 import EmptyState from '../components/EmptyState'
 import { useApp } from '../context/AppContext'
+import { useApproveTutor, useRejectTutor } from '../hooks/tutor'
+import { errorAlert, successAlert } from '../utils'
 import '../styles/dashboard.css'
 
 function AdminDashboard() {
@@ -11,13 +14,53 @@ function AdminDashboard() {
     tutors,
     sessions,
     applications,
-    approveTutor,
-    rejectTutor,
     resetDemoData
   } = useApp()
+  const {
+    mutate: approveTutor,
+    isSuccess: isApproveSuccess,
+    isError: isApproveError,
+    error: approveError,
+    reset: resetApproveState
+  } = useApproveTutor()
+  const {
+    mutate: rejectTutor,
+    isSuccess: isRejectSuccess,
+    isError: isRejectError,
+    error: rejectError,
+    reset: resetRejectState
+  } = useRejectTutor()
 
   const approvedCount = tutors.filter((item) => item.status === 'approved').length
   const rejectedCount = applications.filter((item) => item.status === 'rejected').length
+
+  useEffect(() => {
+    if (isApproveSuccess) {
+      successAlert('Tutor approved successfully')
+      resetApproveState()
+    }
+  }, [isApproveSuccess, resetApproveState])
+
+  useEffect(() => {
+    if (isApproveError) {
+      errorAlert(approveError)
+      resetApproveState()
+    }
+  }, [isApproveError, approveError, resetApproveState])
+
+  useEffect(() => {
+    if (isRejectSuccess) {
+      successAlert('Tutor rejected successfully')
+      resetRejectState()
+    }
+  }, [isRejectSuccess, resetRejectState])
+
+  useEffect(() => {
+    if (isRejectError) {
+      errorAlert(rejectError)
+      resetRejectState()
+    }
+  }, [isRejectError, rejectError, resetRejectState])
 
   return (
     <div className="dashboard-layout">
@@ -85,12 +128,14 @@ function AdminDashboard() {
                     <button
                       className="primary-btn"
                       onClick={() => approveTutor(application.id)}
+                      disabled={isApproveSuccess || isRejectSuccess}
                     >
                       Approve
                     </button>
                     <button
                       className="secondary-btn"
                       onClick={() => rejectTutor(application.id)}
+                      disabled={isApproveSuccess || isRejectSuccess}
                     >
                       Reject
                     </button>

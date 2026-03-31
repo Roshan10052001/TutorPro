@@ -1,10 +1,11 @@
 import { useState } from "react";
 import "../styles/Profile.css";
 import Sidebar from "../components/Sidebar";
-import { useApp } from "../context/AppContext";
+import { useCurrentUserProfile } from "../hooks/auth";
 
 function Profile() {
-	const { currentUserEmail, currentUserRole, currentUserName } = useApp();
+	const { currentUserEmail, currentUserRole, currentUserName } =
+		useCurrentUserProfile();
 
 	const [isEditing, setIsEditing] = useState(false);
 	const [formData, setFormData] = useState({

@@ -2,14 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import Sidebar from '../components/Sidebar'
 import EmptyState from '../components/EmptyState'
 import { useApp } from '../context/AppContext'
+import { useCurrentUserProfile } from '../hooks/auth'
 
 function BookSession() {
-  const {
-    approvedTutors,
-    currentUserEmail,
-    currentUserName,
-    bookSession
-  } = useApp()
+  const { approvedTutors, bookSession } = useApp()
+  const { currentUserEmail, currentUserName } = useCurrentUserProfile()
 
   const [formData, setFormData] = useState({
     tutorName: '',
