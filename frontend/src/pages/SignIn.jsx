@@ -1,139 +1,103 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import Navbar from "../components/Navbar";
-import "../styles/auth.css";
-import { hooks } from "../../hooks";
-import { errorAlert, successAlert } from "../../utils";
+import { useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import Navbar from '../components/Navbar'
+import { useContext } from 'react'
+import { AuthContext } from '../context'
+import { useLogin } from '../hooks/auth'
+import '../styles/auth.css'
 
 function SignIn() {
-	const navigate = useNavigate();
+  const navigate = useNavigate()
+  const { authenticate } = useContext(AuthContext)
+  const { mutateAsync: loginMutateAsync } = useLogin()
 
-	const [formData, setFormData] = useState({
-		email: "",
-		password: "",
-		role: "student",
-	});
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  })
 
-	const { mutate: login, isSuccess, isError, reset, error } = hooks.useLogin();
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
 
-	const [errors, setErrors] = useState({});
-	const [showPassword, setShowPassword] = useState(false);
+  const handleSubmit = async (e) => {
+    e.preventDefault()
 
-	const handleChange = (e) => {
-		const { name, value } = e.target;
-		setFormData({ ...formData, [name]: value });
+    try {
+      const result = await loginMutateAsync({
+        email: formData.email,
+        password: formData.password
+      })
+      if (result?.user) {
+        authenticate({
+          ...result.user,
+          token: result.token || ''
+        })
+      }
 
-		// clear error while typing
-		setErrors((prev) => ({
-			...prev,
-			[name]: "",
-		}));
-	};
+      const role = result?.user?.role
 
-	const validateForm = () => {
-		const newErrors = {};
+      if (role === 'student') navigate('/student-dashboard')
+      if (role === 'tutor') navigate('/tutor-dashboard')
+      if (role === 'admin') navigate('/admin-dashboard')
+    } catch (error) {
+      alert(
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        'Invalid email or password.'
+      )
+      return
+    }
+  }
 
-		if (!formData.email.trim()) {
-			newErrors.email = "Email is required";
-		} else if (!formData.email.endsWith("@slu.edu")) {
-			newErrors.email = "Please enter a valid SLU email";
-		}
+  return (
+    <div className="page-shell">
+      <Navbar />
 
-		if (!formData.password.trim()) {
-			newErrors.password = "Password is required";
-		} else if (formData.password.length < 6) {
-			newErrors.password = "Password must be at least 6 characters";
-		}
+      <main className="auth-page">
+        <div className="auth-card glass-card">
+          <h1>Sign In</h1>
+          <p>Sign in with your saved account credentials.</p>
 
-		setErrors(newErrors);
-		return Object.keys(newErrors).length === 0;
-	};
+          <form onSubmit={handleSubmit} className="auth-form">
+            <label>Email</label>
+            <input
+              type="email"
+              name="email"
+              placeholder="Enter your email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
 
-	const handleSubmit = (e) => {
-		e.preventDefault();
+            <label>Password</label>
+            <input
+              type="password"
+              name="password"
+              placeholder="Enter your password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
 
-		if (!validateForm()) return;
-		login(formData);
-	};
-
-	if (isSuccess) {
-		reset();
-		if (formData.role === "student") navigate("/student-dashboard");
-		if (formData.role === "tutor") navigate("/tutor-dashboard");
-		if (formData.role === "admin") navigate("/admin-dashboard");
-		successAlert("Signed in successfully");
-	}
-	if (isError) {
-		errorAlert(error);
-		reset();
-	}
-
-	return (
-		<div className='page-shell'>
-			<Navbar />
-
-			<main className='auth-page'>
-				<div className='auth-card glass-card'>
-					<h1>Sign In</h1>
-					<p>Welcome back to Tutor Pro.</p>
-
-					<form
-						onSubmit={handleSubmit}
-						className='auth-form'>
-						<label>Email</label>
-						<input
-							type='email'
-							name='email'
-							placeholder='Enter your SLU email'
-							value={formData.email}
-							onChange={handleChange}
-						/>
-						{errors.email && <span className='error-text'>{errors.email}</span>}
-
-						<label>Password</label>
-						<div className='password-wrapper'>
-							<input
-								type={showPassword ? "text" : "password"}
-								name='password'
-								placeholder='Enter your password'
-								value={formData.password}
-								onChange={handleChange}
-							/>
-							<button
-								type='button'
-								className='toggle-password-btn'
-								onClick={() => setShowPassword(!showPassword)}>
-								{showPassword ? "Hide" : "Show"}
-							</button>
-						</div>
-						{errors.password && (
-							<span className='error-text'>{errors.password}</span>
-						)}
-
-						<label>Role</label>
-						<select
-							name='role'
-							value={formData.role}
-							onChange={handleChange}>
-							<option value='student'>Student</option>
-							<option value='tutor'>Tutor</option>
-							<option value='admin'>Admin</option>
-						</select>
-
-						<button
-							type='submit'
-							className='primary-btn full-width'>
-							Sign In
-						</button>
-					</form>
-
-					<p className='auth-footer'>
-						Don’t have an account? <Link to='/signup'>Create one</Link>
-					</p>
-				</div>
-			</main>
-		</div>
-	);
+            <button type="submit" className="primary-btn full-width">
+              Sign In
+            </button>
+          </form>
+{/*
+          <div className="demo-admin-box">
+            <h3>Admin Demo Login</h3>
+            <p><strong>Email:</strong> admin@tutorpro.com</p>
+            <p><strong>Password:</strong> Admin123!</p>
+          </div>
+*/}
+          <p className="auth-footer">
+            Don’t have an account? <Link to="/signup">Create one</Link>
+          </p>
+        </div>
+      </main>
+    </div>
+  )
 }
 
-export default SignIn;
+export default SignIn

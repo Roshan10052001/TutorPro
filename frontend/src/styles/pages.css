@@ -1,0 +1,186 @@
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.tutor-card p {
+    margin-bottom: 10px;
+    color: var(--text-secondary);
+}
+
+.search-input,
+.booking-form input,
+.booking-form textarea,
+.booking-form select {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    background: rgba(255, 255, 255, 0.92);
+    outline: none;
+    transition: all 0.2s ease;
+    font: inherit;
+}
+
+.search-input:focus,
+.booking-form input:focus,
+.booking-form textarea:focus,
+.booking-form select:focus {
+    border-color: var(--billiken-light);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+
+.search-input::placeholder,
+.booking-form textarea::placeholder,
+.booking-form input::placeholder {
+    color: #94a3b8;
+}
+
+.form-panel {
+    max-width: 760px;
+}
+
+.booking-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.booking-form label {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.action-grid {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.profile-card p {
+    margin-bottom: 12px;
+    color: var(--text-secondary);
+}
+
+.empty-state {
+    text-align: center;
+}
+
+.approval-list {
+    display: grid;
+    gap: 18px;
+}
+
+.approval-card {
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 20px;
+    padding: 20px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.92));
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+.approval-card-top,
+.tutor-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.slot-list {
+    margin-top: 10px;
+    padding-left: 20px;
+}
+
+.slot-list li {
+    margin-bottom: 6px;
+    color: var(--text-secondary);
+}
+
+.enhanced-panel {
+    border-radius: 24px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.92));
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+}
+
+.soft-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+.soft-badge.pending {
+    background: rgba(245, 158, 11, 0.12);
+    color: #b45309;
+}
+
+.soft-badge.approved {
+    background: rgba(16, 185, 129, 0.12);
+    color: #047857;
+}
+
+.slot-section {
+    margin: 14px 0 18px;
+}
+
+.muted-text {
+    color: var(--text-secondary);
+}
+
+.course-line {
+    margin-top: 4px;
+    color: var(--text-secondary);
+}
+
+.empty-inline-state {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: flex-start;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.summary-box {
+    border-radius: 20px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    text-align: center;
+}
+
+.summary-box h3 {
+    margin: 0 0 8px;
+    font-size: 1.8rem;
+    font-weight: 800;
+}
+
+.summary-box p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+@media (max-width: 900px) {
+
+    .card-grid,
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .approval-card-top,
+    .tutor-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

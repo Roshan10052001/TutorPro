@@ -7,6 +7,8 @@ const rateLimit = require("express-rate-limit");
 const connectDB = require("./config/db");
 const errorHandler = require("./middleware/error");
 const cookieParser = require("cookie-parser");
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./config/swagger");
 
 dotenv.config();
 
@@ -45,6 +47,9 @@ app.use((req, res, next) => {
 	console.log(`${req.method} ${req.originalUrl}`);
 	next();
 });
+
+// Swagger docs
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 //Routes
 const authRoutes = require("./routes/auth");

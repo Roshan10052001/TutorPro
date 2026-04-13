@@ -1,10 +1,13 @@
 import axios from "axios";
 import { getStoredUser } from "../storage";
 
-import { baseUrl } from "./constant";
+import { baseUrl } from "./constants";
 
 export async function getJWTHeader() {
-	return { Authorization: `Bearer ${await getStoredUser()}` };
+	const storedUser = getStoredUser();
+	return storedUser?.token
+		? { Authorization: `Bearer ${storedUser.token}` }
+		: {};
 }
 
 const config = { baseURL: baseUrl };

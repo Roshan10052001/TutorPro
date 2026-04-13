@@ -1,0 +1,60 @@
+.profile-card h2 {
+  margin-bottom: 1rem;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.profile-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-label {
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.profile-value {
+  padding: 12px 14px;
+  background: #f9fafb;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+}
+
+.profile-input {
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  outline: none;
+  font-size: 14px;
+}
+
+.profile-input:focus {
+  border-color: #2563eb;
+}
+
+.profile-actions {
+  margin: 20px 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.account-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+}       
