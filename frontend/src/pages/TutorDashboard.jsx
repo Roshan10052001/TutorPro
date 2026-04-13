@@ -3,17 +3,20 @@ import Sidebar from '../components/Sidebar'
 import StatCard from '../components/StatCard'
 import SessionCard from '../components/SessionCard'
 import PageHeader from '../components/PageHeader'
-import { useApp } from '../context/AppContext'
+import { useCurrentUserProfile } from '../hooks/auth'
+import {
+  useSessions,
+  useTutorList,
+  useUpdateTutorAvailability
+} from '../hooks/tutor'
 import '../styles/dashboard.css'
 
 function TutorDashboard() {
   const navigate = useNavigate()
-  const {
-    tutors,
-    sessions,
-    currentUserEmail,
-    updateTutorAvailability
-  } = useApp()
+  const tutors = useTutorList()
+  const sessions = useSessions()
+  const { mutate: updateTutorAvailability } = useUpdateTutorAvailability()
+  const { currentUserEmail } = useCurrentUserProfile()
 
   const myTutorProfile = tutors.find(
     (tutor) => tutor.email.trim().toLowerCase() === currentUserEmail.trim().toLowerCase()
@@ -36,7 +39,7 @@ function TutorDashboard() {
     )
 
     if (newSlots !== null) {
-      updateTutorAvailability(currentUserEmail, newSlots)
+      updateTutorAvailability({ email: currentUserEmail, slotsText: newSlots })
       alert('Availability updated successfully!')
     }
   }

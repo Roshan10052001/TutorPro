@@ -3,12 +3,15 @@ import Sidebar from '../components/Sidebar'
 import StatCard from '../components/StatCard'
 import SessionCard from '../components/SessionCard'
 import PageHeader from '../components/PageHeader'
-import { useApp } from '../context/AppContext'
+import { useCurrentUserProfile } from '../hooks/auth'
+import { useApprovedTutors, useSessions } from '../hooks/tutor'
 import '../styles/dashboard.css'
 
 function StudentDashboard() {
   const navigate = useNavigate()
-  const { sessions, approvedTutors, currentUserEmail } = useApp()
+  const sessions = useSessions()
+  const approvedTutors = useApprovedTutors()
+  const { currentUserEmail } = useCurrentUserProfile()
 
   const studentSessions = sessions.filter(
     (session) => session.studentEmail === currentUserEmail

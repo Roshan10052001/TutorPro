@@ -2,12 +2,12 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import EmptyState from '../components/EmptyState'
-import { useApp } from '../context/AppContext'
+import { useApprovedTutors } from '../hooks/tutor'
 
 function Tutors() {
   const [search, setSearch] = useState('')
   const navigate = useNavigate()
-  const { approvedTutors } = useApp()
+  const approvedTutors = useApprovedTutors()
 
   const filteredTutors = useMemo(() => {
     return approvedTutors.filter(

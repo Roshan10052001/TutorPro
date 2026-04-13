@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
-import { useApp } from '../context/AppContext'
+import { useContext } from 'react'
+import { AuthContext } from '../context'
+import { useSignup } from '../hooks/auth'
 import '../styles/auth.css'
 
 function SignUp() {
   const navigate = useNavigate()
-  const { registerUser } = useApp()
+  const { authenticate } = useContext(AuthContext)
+  const { mutateAsync: signupMutateAsync } = useSignup()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -20,7 +23,7 @@ function SignUp() {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
     if (formData.password !== formData.confirmPassword) {
@@ -28,18 +31,27 @@ function SignUp() {
       return
     }
 
-    const result = registerUser({
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      role: formData.role
-    })
-
-    alert(result.message)
-
-    if (!result.ok) return
-
-    navigate('/signin')
+    try {
+      const result = await signupMutateAsync({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role
+      })
+      if (result?.user) {
+        authenticate({
+          ...result.user,
+          token: result.token || ''
+        })
+      }
+      navigate('/signin')
+    } catch (error) {
+      alert(
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        'Unable to create account.'
+      )
+    }
   }
 
   return (

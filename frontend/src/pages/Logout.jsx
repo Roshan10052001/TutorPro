@@ -1,12 +1,15 @@
 import { Link } from 'react-router-dom'
+import { useContext, useEffect } from 'react'
 import Navbar from '../components/Navbar'
-import { useApp } from '../context/AppContext'
+import { AuthContext } from '../context'
 import '../styles/auth.css'
 
 function Logout() {
-  const { logoutUser } = useApp()
+  const { logout } = useContext(AuthContext)
 
-  logoutUser()
+  useEffect(() => {
+    logout()
+  }, [logout])
 
   return (
     <div className="page-shell">
