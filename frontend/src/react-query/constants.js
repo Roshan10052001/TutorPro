@@ -3,4 +3,6 @@ export const queryKeys = {
 	tutors: "tutors",
 	applications: "applications",
 	sessions: "sessions",
+	tutorApplication: "tutorApplication",
+	allTutorApplications: "allTutorApplications",
 };

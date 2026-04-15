@@ -1,176 +1,304 @@
-import { useEffect } from 'react'
-import Sidebar from '../components/Sidebar'
-import StatCard from '../components/StatCard'
-import PageHeader from '../components/PageHeader'
-import EmptyState from '../components/EmptyState'
+import { useState } from "react";
+import Sidebar from "../components/Sidebar";
+import StatCard from "../components/StatCard";
+import PageHeader from "../components/PageHeader";
+import EmptyState from "../components/EmptyState";
+import DataTable from "../components/DataTable";
+import Modal from "../components/Modal";
+import Swal from "sweetalert2";
 import {
-  useApplications,
-  useApproveTutor,
-  usePendingApplications,
-  useRejectTutor,
-  useResetDemoData,
-  useSessions,
-  useTutorList
-} from '../hooks/tutor'
-import { errorAlert, successAlert } from '../utils'
-import '../styles/dashboard.css'
+	useGetAllTutorApplications,
+	useUpdateTutorApplication,
+} from "../hooks/tutorApplication";
+import { useSessions } from "../hooks/tutor";
+import { errorAlert, successAlert } from "../utils";
+import "../styles/dashboard.css";
 
 function AdminDashboard() {
-  const pendingApplications = usePendingApplications()
-  const tutors = useTutorList()
-  const sessions = useSessions()
-  const applications = useApplications()
-  const { mutate: resetDemoData } = useResetDemoData()
-  const {
-    mutate: approveTutor,
-    isSuccess: isApproveSuccess,
-    isError: isApproveError,
-    error: approveError,
-    reset: resetApproveState
-  } = useApproveTutor()
-  const {
-    mutate: rejectTutor,
-    isSuccess: isRejectSuccess,
-    isError: isRejectError,
-    error: rejectError,
-    reset: resetRejectState
-  } = useRejectTutor()
+	const { data: applications = [] } = useGetAllTutorApplications();
+	const sessions = useSessions();
+	const { mutateAsync: updateTutorApplication, isPending } =
+		useUpdateTutorApplication();
+	const [adminNotesById, setAdminNotesById] = useState({});
+	const [selectedApplication, setSelectedApplication] = useState(null);
+	const [activeAction, setActiveAction] = useState("");
+	const [activeApplicationId, setActiveApplicationId] = useState("");
 
-  const approvedCount = tutors.filter((item) => item.status === 'approved').length
-  const rejectedCount = applications.filter((item) => item.status === 'rejected').length
+	const pendingApplications = applications.filter(
+		(item) => item.status === "pending",
+	);
+	const approvedCount = applications.filter(
+		(item) => item.status === "approved",
+	).length;
+	const rejectedCount = applications.filter(
+		(item) => item.status === "rejected",
+	).length;
+	const isActionPending = isPending;
 
-  useEffect(() => {
-    if (isApproveSuccess) {
-      successAlert('Tutor approved successfully')
-      resetApproveState()
-    }
-  }, [isApproveSuccess, resetApproveState])
+	const handleNotesChange = (applicationId, value) => {
+		setAdminNotesById((prev) => ({
+			...prev,
+			[applicationId]: value,
+		}));
+	};
 
-  useEffect(() => {
-    if (isApproveError) {
-      errorAlert(approveError)
-      resetApproveState()
-    }
-  }, [isApproveError, approveError, resetApproveState])
+	const handleOpenRequest = (application) => {
+		setSelectedApplication(application);
+	};
 
-  useEffect(() => {
-    if (isRejectSuccess) {
-      successAlert('Tutor rejected successfully')
-      resetRejectState()
-    }
-  }, [isRejectSuccess, resetRejectState])
+	const handleCloseRequest = () => {
+		setSelectedApplication(null);
+	};
 
-  useEffect(() => {
-    if (isRejectError) {
-      errorAlert(rejectError)
-      resetRejectState()
-    }
-  }, [isRejectError, rejectError, resetRejectState])
+	const handleApplicationAction = async (application, status) => {
+		const actionLabel = status === "approved" ? "approve" : "reject";
+		const notes = (
+			adminNotesById[application._id] ??
+			application.adminNotes ??
+			""
+		).trim();
 
-  return (
-    <div className="dashboard-layout">
-      <Sidebar role="Admin" />
+		const result = await Swal.fire({
+			title: `Are you sure you want to ${actionLabel} this application?`,
+			text:
+				status === "approved"
+					? "This tutor application will be marked as approved."
+					: "This tutor application will be marked as rejected.",
+			icon: "question",
+			showCancelButton: true,
+			confirmButtonText: status === "approved" ? "Yes, approve" : "Yes, reject",
+			cancelButtonText: "Cancel",
+			reverseButtons: true,
+			focusCancel: true,
+		});
 
-      <main className="dashboard-main">
-        <PageHeader
-          title="Admin Dashboard"
-          subtitle="Review tutor applications, approve tutors, and monitor platform activity."
-          buttonText="Reset Demo Data"
-          onClick={resetDemoData}
-        />
+		if (!result.isConfirmed) return;
 
-        <section className="stats-grid">
-          <StatCard
-            title="Pending Tutors"
-            value={pendingApplications.length}
-            subtitle="Awaiting approval"
-          />
-          <StatCard
-            title="Approved Tutors"
-            value={approvedCount}
-            subtitle="Visible to students"
-          />
-          <StatCard
-            title="Total Sessions"
-            value={sessions.length}
-            subtitle="Platform bookings"
-          />
-        </section>
+		try {
+			setActiveAction(status);
+			setActiveApplicationId(application._id);
+			await updateTutorApplication({
+				applicationId: application._id,
+				status,
+				adminNotes: notes,
+			});
 
-        <section className="dashboard-panel">
-          <h2>Tutor Approval Requests</h2>
+			successAlert(
+				status === "approved"
+					? "Tutor application approved successfully"
+					: "Tutor application rejected successfully",
+			);
+		} catch (error) {
+			errorAlert(error);
+		} finally {
+			setActiveAction("");
+			setActiveApplicationId("");
+			setSelectedApplication(null);
+		}
+	};
 
-          {pendingApplications.length === 0 ? (
-            <EmptyState
-              title="No pending applications"
-              text="All tutor requests have been reviewed."
-            />
-          ) : (
-            <div className="approval-list">
-              {pendingApplications.map((application) => (
-                <div className="approval-card" key={application.id}>
-                  <div className="approval-card-top">
-                    <div>
-                      <h3>{application.name}</h3>
-                      <span className="soft-badge pending">Pending</span>
-                    </div>
-                  </div>
+	const columns = [
+		{
+			key: "name",
+			header: "Applicant",
+		},
+		{
+			key: "email",
+			header: "Email",
+		},
+		{
+			key: "course",
+			header: "Course",
+		},
+		{
+			key: "createdAt",
+			header: "Submitted",
+			render: (application) =>
+				application.createdAt
+					? new Date(application.createdAt).toLocaleDateString()
+					: "-",
+		},
+		{
+			key: "status",
+			header: "Status",
+			render: (application) => (
+				<span className={`status-badge ${application.status || "pending"}`}>
+					{application.status || "pending"}
+				</span>
+			),
+		},
+		{
+			key: "actions",
+			header: "Action",
+			render: (application) => (
+				<button
+					type='button'
+					className='primary-btn'
+					onClick={() => handleOpenRequest(application)}>
+					View
+				</button>
+			),
+		},
+	];
 
-                  <p><strong>Email:</strong> {application.email}</p>
-                  <p><strong>Course:</strong> {application.course}</p>
-                  <p><strong>Bio:</strong> {application.bio}</p>
+	return (
+		<div className='dashboard-layout'>
+			<Sidebar role='Admin' />
 
-                  <div>
-                    <strong>Availability:</strong>
-                    <ul className="slot-list">
-                      {application.availability.map((slot, index) => (
-                        <li key={index}>{slot}</li>
-                      ))}
-                    </ul>
-                  </div>
+			<main className='dashboard-main'>
+				<PageHeader
+					title='Admin Dashboard'
+					subtitle='Review tutor applications, approve tutors, and monitor platform activity.'
+				/>
 
-                  <div className="action-grid">
-                    <button
-                      className="primary-btn"
-                      onClick={() => approveTutor(application.id)}
-                      disabled={isApproveSuccess || isRejectSuccess}
-                    >
-                      Approve
-                    </button>
-                    <button
-                      className="secondary-btn"
-                      onClick={() => rejectTutor(application.id)}
-                      disabled={isApproveSuccess || isRejectSuccess}
-                    >
-                      Reject
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+				<section className='stats-grid'>
+					<StatCard
+						title='Pending Tutors'
+						value={pendingApplications.length}
+						subtitle='Awaiting approval'
+					/>
+					<StatCard
+						title='Approved Tutors'
+						value={approvedCount}
+						subtitle='Visible to students'
+					/>
+					<StatCard
+						title='Total Sessions'
+						value={sessions.length}
+						subtitle='Platform bookings'
+					/>
+				</section>
 
-        <section className="dashboard-panel">
-          <h2>Platform Summary</h2>
-          <div className="summary-grid">
-            <div className="summary-box">
-              <h3>{approvedCount}</h3>
-              <p>Approved tutors</p>
-            </div>
-            <div className="summary-box">
-              <h3>{rejectedCount}</h3>
-              <p>Rejected applications</p>
-            </div>
-            <div className="summary-box">
-              <h3>{sessions.length}</h3>
-              <p>Total booked sessions</p>
-            </div>
-          </div>
-        </section>
-      </main>
-    </div>
-  )
+				<section className='dashboard-panel'>
+					<h2>Tutor Approval Requests</h2>
+
+					{pendingApplications.length === 0 ? (
+						<EmptyState
+							title='No pending applications'
+							text='All tutor requests have been reviewed.'
+						/>
+					) : (
+						<DataTable
+							columns={columns}
+							data={pendingApplications}
+							emptyTitle='No pending applications'
+							emptyText='All tutor requests have been reviewed.'
+						/>
+					)}
+				</section>
+
+				<section className='dashboard-panel'>
+					<h2>Platform Summary</h2>
+					<div className='summary-grid'>
+						<div className='summary-box'>
+							<h3>{approvedCount}</h3>
+							<p>Approved tutors</p>
+						</div>
+						<div className='summary-box'>
+							<h3>{rejectedCount}</h3>
+							<p>Rejected applications</p>
+						</div>
+						<div className='summary-box'>
+							<h3>{sessions.length}</h3>
+							<p>Total booked sessions</p>
+						</div>
+					</div>
+				</section>
+
+				<Modal
+					isOpen={Boolean(selectedApplication)}
+					onClose={handleCloseRequest}
+					title='Tutor Application Request'
+					size='lg'>
+					{selectedApplication ? (
+						<div className='booking-form'>
+							<label>Name</label>
+							<input
+								type='text'
+								value={selectedApplication.name}
+								readOnly
+							/>
+
+							<label>Email</label>
+							<input
+								type='email'
+								value={selectedApplication.email}
+								readOnly
+							/>
+
+							<label>Course</label>
+							<input
+								type='text'
+								value={selectedApplication.course}
+								readOnly
+							/>
+
+							<label>Bio</label>
+							<textarea
+								value={selectedApplication.bio}
+								rows='4'
+								readOnly
+							/>
+
+							<label>Availability</label>
+							<ul className='slot-list'>
+								{selectedApplication.availability.map((slot, index) => (
+									<li key={`${slot}-${index}`}>{slot}</li>
+								))}
+							</ul>
+
+							<label>Comments</label>
+							<textarea
+								value={
+									adminNotesById[selectedApplication._id] ??
+									selectedApplication.adminNotes ??
+									""
+								}
+								onChange={(event) =>
+									handleNotesChange(selectedApplication._id, event.target.value)
+								}
+								placeholder='Add comments for this application'
+								rows='3'
+							/>
+
+							<div className='action-grid'>
+								<button
+									type='button'
+									className='primary-btn'
+									onClick={() =>
+										handleApplicationAction(selectedApplication, "approved")
+									}
+									disabled={isActionPending}>
+									{isPending &&
+									activeAction === "approved" &&
+									activeApplicationId === selectedApplication._id
+										? "Approving..."
+										: "Approve"}
+								</button>
+								<button
+									type='button'
+									className='secondary-btn'
+									style={{
+										color: "red",
+										border: "1px solid red",
+									}}
+									onClick={() =>
+										handleApplicationAction(selectedApplication, "rejected")
+									}
+									disabled={isActionPending}>
+									{isPending &&
+									activeAction === "rejected" &&
+									activeApplicationId === selectedApplication._id
+										? "Rejecting..."
+										: "Reject"}
+								</button>
+							</div>
+						</div>
+					) : null}
+				</Modal>
+			</main>
+		</div>
+	);
 }
 
-export default AdminDashboard
+export default AdminDashboard;

@@ -1,6 +1,5 @@
 import axios from "axios";
 import { getStoredUser } from "../storage";
-
 import { baseUrl } from "./constants";
 
 export async function getJWTHeader() {

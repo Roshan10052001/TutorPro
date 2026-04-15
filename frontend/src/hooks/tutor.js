@@ -155,62 +155,6 @@ export function useRejectTutor() {
 	return { mutate, mutateAsync, isSuccess, isError, reset, error };
 }
 
-export function useSubmitTutorApplication() {
-	const queryClient = useQueryClient();
-
-	return useMutation({
-		mutationFn: async (applicationData) => {
-			const tutors = readTutorsFromStorage();
-			const applications = readApplicationsFromStorage();
-			const cleanEmail = applicationData.email.trim().toLowerCase();
-
-			const alreadyApproved = tutors.some(
-				(tutor) => tutor.email.trim().toLowerCase() === cleanEmail,
-			);
-
-			if (alreadyApproved) {
-				return {
-					ok: false,
-					message: "You are already approved as a tutor.",
-				};
-			}
-
-			const alreadyPending = applications.some(
-				(application) =>
-					application.email.trim().toLowerCase() === cleanEmail &&
-					application.status === "pending",
-			);
-
-			if (alreadyPending) {
-				return {
-					ok: false,
-					message: "Your tutor application is already pending admin approval.",
-				};
-			}
-
-			const newApplication = {
-				id: Date.now(),
-				...applicationData,
-				email: cleanEmail,
-				availability: [
-					...new Set(applicationData.availability.map((slot) => slot.trim())),
-				],
-				status: "pending",
-			};
-
-			writeApplicationsToStorage([newApplication, ...applications]);
-
-			return {
-				ok: true,
-				message: "Tutor application submitted successfully.",
-			};
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: [queryKeys.applications] });
-		},
-	});
-}
-
 export function useBookSession() {
 	const queryClient = useQueryClient();
 
@@ -237,7 +181,8 @@ export function useBookSession() {
 			if (!tutor.availability.includes(slot)) {
 				return {
 					ok: false,
-					message: "This slot is no longer available. Please choose another slot.",
+					message:
+						"This slot is no longer available. Please choose another slot.",
 				};
 			}
 
@@ -275,7 +220,7 @@ export function useBookSession() {
 								availability: item.availability.filter(
 									(available) => available !== slot,
 								),
-						  }
+							}
 						: item,
 				),
 			);
@@ -313,7 +258,7 @@ export function useUpdateTutorAvailability() {
 						? {
 								...tutor,
 								availability: slots,
-						  }
+							}
 						: tutor,
 				),
 			);

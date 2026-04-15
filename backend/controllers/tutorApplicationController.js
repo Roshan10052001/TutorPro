@@ -1,0 +1,105 @@
+const TutorApplication = require("../models/TutorApplication");
+const asyncHandler = require("../utils/asyncHandler");
+const ErrorResponse = require("../utils/errorResponse");
+
+// @desc    Submit tutor application
+// @route   POST /api/v1/tutor-applications
+// @access  Private
+exports.submitTutorApplication = asyncHandler(async (req, res, next) => {
+	const { name, email, course, availability, bio } = req.body;
+
+	if (!name || !email || !course || !bio) {
+		return next(new ErrorResponse("Please provide all required fields", 400));
+	}
+
+	if (!Array.isArray(availability) || availability.length === 0) {
+		return next(
+			new ErrorResponse("Please provide at least one availability slot", 400),
+		);
+	}
+
+	const existingPendingApplication = await TutorApplication.findOne({
+		user: req.user._id,
+		course,
+		status: "pending",
+	});
+
+	if (existingPendingApplication) {
+		return next(
+			new ErrorResponse(
+				"You already have a pending application for this course",
+				400,
+			),
+		);
+	}
+
+	const application = await TutorApplication.create({
+		user: req.user._id,
+		name,
+		email,
+		course,
+		availability,
+		bio,
+	});
+
+	res.status(201).json({
+		success: true,
+		message: "Tutor application submitted successfully",
+	});
+});
+
+// @desc    Get tutor applications for current user
+// @route   GET /api/v1/tutor-applications
+// @access  Private
+exports.getTutorApplications = asyncHandler(async (req, res, next) => {
+	const applications = await TutorApplication.find({ user: req.user._id });
+
+	res.status(200).json({
+		success: true,
+		count: applications.length,
+		data: applications,
+	});
+});
+
+// @desc    Get all tutor applications (admin only)
+// @route   GET /api/v1/tutor-applications/all
+// @access  Private/Admin
+exports.getAllTutorApplications = asyncHandler(async (req, res, next) => {
+	const applications = await TutorApplication.find().populate(
+		"user",
+		"name email",
+	);
+
+	res.status(200).json({
+		success: true,
+		count: applications.length,
+		data: applications,
+	});
+});
+
+// @desc    Update tutor application status (admin only)
+// @route   PUT /api/v1/tutor-applications/:id
+// @access  Private/Admin
+exports.updateTutorApplicationStatus = asyncHandler(async (req, res, next) => {
+	const { status, adminNotes } = req.body;
+
+	if (!["approved", "rejected"].includes(status)) {
+		return next(new ErrorResponse("Invalid status value", 400));
+	}
+
+	const application = await TutorApplication.findById(req.params.id);
+
+	if (!application) {
+		return next(new ErrorResponse("Tutor application not found", 404));
+	}
+
+	application.status = status;
+	application.adminNotes = adminNotes || "";
+	await application.save();
+
+	res.status(200).json({
+		success: true,
+		message: "Tutor application status updated successfully",
+		data: application,
+	});
+});
