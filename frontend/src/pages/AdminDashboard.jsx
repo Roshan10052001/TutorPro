@@ -10,12 +10,12 @@ import {
 	useGetAllTutorApplications,
 	useUpdateTutorApplication,
 } from "../hooks/tutorApplication";
-import { useSessions } from "../hooks/tutor";
+// import { useSessions } from "../hooks/tutor";
 import "../styles/dashboard.css";
 
 function AdminDashboard() {
 	const { data: applications = [] } = useGetAllTutorApplications();
-	const sessions = useSessions();
+	const sessions = [];
 	const { mutateAsync: updateTutorApplication, isPending } =
 		useUpdateTutorApplication();
 	const [adminNotesById, setAdminNotesById] = useState({});
