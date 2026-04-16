@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { axiosInstance } from "../axiosInstance";
-import { errorAlert, getDecodedJWT, successAlert } from "../utils";
+import { errorAlert, successAlert } from "../utils";
 import { queryClient } from "../react-query/index";
 import { queryKeys } from "../react-query/constants";
 
@@ -10,7 +10,6 @@ const fetchBookings = async () => {
 		method: "GET",
 		headers: {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${getDecodedJWT()}`,
 		},
 	});
 
@@ -23,7 +22,6 @@ const fetchBookingById = async (bookingId) => {
 		method: "GET",
 		headers: {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${getDecodedJWT()}`,
 		},
 	});
 
@@ -37,7 +35,6 @@ const createBooking = async (payload) => {
 		data: payload,
 		headers: {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${getDecodedJWT()}`,
 		},
 	});
 
@@ -51,7 +48,6 @@ const updateBooking = async ({ bookingId, payload }) => {
 		data: payload,
 		headers: {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${getDecodedJWT()}`,
 		},
 	});
 
@@ -64,7 +60,6 @@ const deleteBooking = async (bookingId) => {
 		method: "DELETE",
 		headers: {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${getDecodedJWT()}`,
 		},
 	});
 
@@ -78,7 +73,6 @@ const updateBookingStatus = async ({ bookingId, status }) => {
 		data: { status },
 		headers: {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${getDecodedJWT()}`,
 		},
 	});
 
@@ -91,7 +85,6 @@ const cancelBooking = async (bookingId) => {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${getDecodedJWT()}`,
 		},
 	});
 

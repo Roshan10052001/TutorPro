@@ -30,7 +30,7 @@ const sendTokenResponse = (user, statusCode, res) => {
 				address: user.address || "",
 				major: user.major || "",
 				year: user.year || "",
-				subjects: user.subjects || "",
+				subjects: user.subjects || [],
 				experience: user.experience || "",
 			},
 		});

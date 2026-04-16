@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { axiosInstance } from "../axiosInstance";
-import { errorAlert, getDecodedJWT, successAlert } from "../utils";
+import { errorAlert, successAlert } from "../utils";
 import { queryClient } from "../react-query/index";
 import { queryKeys } from "../react-query/constants";
 
@@ -11,7 +11,6 @@ const fetchTutors = async (params = {}) => {
 		params,
 		headers: {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${getDecodedJWT()}`,
 		},
 	});
 
@@ -24,7 +23,6 @@ const fetchTutorById = async (tutorId) => {
 		method: "GET",
 		headers: {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${getDecodedJWT()}`,
 		},
 	});
 
@@ -37,7 +35,6 @@ const deleteTutor = async (tutorId) => {
 		method: "DELETE",
 		headers: {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${getDecodedJWT()}`,
 		},
 	});
 

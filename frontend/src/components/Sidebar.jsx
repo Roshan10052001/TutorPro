@@ -31,8 +31,8 @@ function Sidebar({ role }) {
 			{role === "Admin" && (
 				<>
 					<Link to='/admin/dashboard'>Dashboard</Link>
-					{/* <Link to='/sessions'>All Sessions</Link>
-					<Link to='/profile'>Profile</Link> */}
+					<Link to='/admin/sessions'>All Sessions</Link>
+					<Link to='/admin/profile'>Profile</Link>
 				</>
 			)}
 

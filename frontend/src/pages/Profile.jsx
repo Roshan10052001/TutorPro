@@ -8,7 +8,6 @@ import { MAJORS, SUBJECT_OPTIONS, YEARS } from "../utils";
 
 function Profile() {
 	const { user, updateUser } = useContext(AuthContext);
-	console.log(user);
 	const [isEditing, setIsEditing] = useState(false);
 	const [formData, setFormData] = useState({
 		name: user?.name || "",

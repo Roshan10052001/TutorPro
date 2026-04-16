@@ -12,14 +12,40 @@ exports.updateProfile = asyncHandler(async (req, res, next) => {
 		return next(new ErrorResponse("User not found", 404));
 	}
 
-	user.name = req.body.name ?? user.name;
-	user.email = req.body.email ?? user.email;
-	user.phone = req.body.phone ?? user.phone;
-	user.address = req.body.address ?? user.address;
-	user.major = req.body.major ?? user.major;
-	user.year = req.body.year ?? user.year;
-	user.subjects = req.body.subjects ?? user.subjects;
-	user.experience = req.body.experience ?? user.experience;
+	const { name, email, phone, address, major, year, subjects, experience } =
+		req.body;
+
+	// Handle email change safely
+	if (email !== undefined && email.trim().toLowerCase() !== user.email) {
+		const normalizedEmail = email.trim().toLowerCase();
+
+		// format check
+		const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+
+		if (!emailRegex.test(normalizedEmail)) {
+			return next(new ErrorResponse("Please enter a valid email", 400));
+		}
+
+		// uniqueness check
+		const existingUser = await User.findOne({
+			email: normalizedEmail,
+			_id: { $ne: user._id },
+		});
+
+		if (existingUser) {
+			return next(new ErrorResponse("Email is already in use", 400));
+		}
+
+		user.email = normalizedEmail;
+	}
+
+	if (name !== undefined) user.name = name;
+	if (phone !== undefined) user.phone = phone;
+	if (address !== undefined) user.address = address;
+	if (major !== undefined) user.major = major;
+	if (year !== undefined) user.year = year;
+	if (subjects !== undefined) user.subjects = subjects;
+	if (experience !== undefined) user.experience = experience;
 
 	await user.save();
 
@@ -39,7 +65,7 @@ exports.deleteProfile = asyncHandler(async (req, res, next) => {
 		return next(new ErrorResponse("User not found", 404));
 	}
 
-	await user.remove();
+	await user.deleteOne();
 
 	res.status(200).json({
 		success: true,

@@ -1,18 +1,17 @@
 import { useMutation } from "@tanstack/react-query";
 import { axiosInstance } from "../axiosInstance";
-import { errorAlert, getDecodedJWT, successAlert } from "../utils";
+import { errorAlert, successAlert } from "../utils";
 import { queryClient } from "../react-query/index";
 import { queryKeys } from "../react-query/constants";
 import { getStoredUser, setStoredUser } from "../storage";
 
 const updateUserProfile = async (payload) => {
 	const { data } = await axiosInstance({
-		url: "/user/profile",
+		url: "/users/profile",
 		method: "PUT",
 		data: payload,
 		headers: {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${getDecodedJWT()}`,
 		},
 	});
 
@@ -21,11 +20,10 @@ const updateUserProfile = async (payload) => {
 
 const deleteUserProfile = async () => {
 	const { data } = await axiosInstance({
-		url: "/user/profile",
+		url: "/users/profile",
 		method: "DELETE",
 		headers: {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${getDecodedJWT()}`,
 		},
 	});
 

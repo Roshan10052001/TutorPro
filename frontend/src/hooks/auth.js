@@ -57,11 +57,8 @@ export async function fetchAuthenticatedUserRequest() {
 		method: "GET",
 		headers: {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${token}`,
 		},
 	});
-
-	console.log(data);
 
 	if (data?.data && token) {
 		setStoredUser({

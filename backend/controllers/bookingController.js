@@ -19,6 +19,40 @@ function getBookingAccess(booking, user, populated = false) {
 	};
 }
 
+const convertTimeToMinutes = (timeString) => {
+	if (!timeString) return 0;
+	const [time, modifier] = timeString.split(" ");
+	let [hours, minutes] = time.split(":").map(Number);
+
+	if (modifier === "PM" && hours !== 12) hours += 12;
+	if (modifier === "AM" && hours === 12) hours = 0;
+
+	return hours * 60 + minutes;
+};
+
+function normalizeDateOnly(value) {
+	const date = new Date(value);
+	date.setHours(0, 0, 0, 0);
+	return date;
+}
+
+function buildDateTime(dateValue, timeString) {
+	const date = normalizeDateOnly(dateValue);
+
+	const [time, modifier] = timeString.trim().split(" ");
+	let [hours, minutes] = time.split(":").map(Number);
+
+	if (modifier === "PM" && hours !== 12) {
+		hours += 12;
+	}
+
+	if (modifier === "AM" && hours === 12) {
+		hours = 0;
+	}
+
+	date.setHours(hours, minutes, 0, 0);
+	return date;
+}
 // @desc    Create a new booking
 // @route   POST /api/v1/bookings
 // @access  Private (students only)
@@ -41,30 +75,40 @@ exports.createBooking = asyncHandler(async (req, res, next) => {
 		);
 	}
 
-	const existingBooking = await Booking.findOne({
+	const bookingDate = normalizeDateOnly(date);
+	const newStart = convertTimeToMinutes(startTime);
+	const newEnd = convertTimeToMinutes(endTime);
+
+	if (newEnd <= newStart) {
+		return next(new ErrorResponse("End time must be after start time", 400));
+	}
+
+	const bookingDateTime = buildDateTime(bookingDate, startTime);
+
+	if (bookingDateTime < new Date()) {
+		return next(new ErrorResponse("Cannot book a session in the past", 400));
+	}
+
+	const existingBookings = await Booking.find({
 		tutor,
-		date,
-		startTime,
+		date: bookingDate,
+		status: { $ne: "cancelled" },
 	});
 
-	if (existingBooking) {
+	const hasConflict = existingBookings.some((booking) => {
+		const existingStart = convertTimeToMinutes(booking.startTime);
+		const existingEnd = convertTimeToMinutes(booking.endTime);
+
+		return existingStart < newEnd && existingEnd > newStart;
+	});
+
+	if (hasConflict) {
 		return next(
 			new ErrorResponse(
-				"This tutor already has a booking for that time slot",
+				"This tutor already has a booking that overlaps this time",
 				400,
 			),
 		);
-	}
-
-	// Prevent booking in the past
-	const bookingDate = new Date(date);
-	bookingDate.setHours(parseInt(startTime.split(":")[0]));
-	bookingDate.setMinutes(parseInt(startTime.split(":")[1]));
-	bookingDate.setSeconds(0);
-	bookingDate.setMilliseconds(0);
-
-	if (bookingDate < new Date()) {
-		return next(new ErrorResponse("Cannot book a session in the past", 400));
 	}
 
 	const booking = await Booking.create({
@@ -87,6 +131,7 @@ exports.createBooking = asyncHandler(async (req, res, next) => {
 // @route   GET /api/v1/bookings
 // @access  Private (students see their bookings, tutors see bookings where they are the tutor)
 exports.getBookings = asyncHandler(async (req, res, next) => {
+	//Admin can see all bookings, students see their bookings, tutors see bookings where they are the tutor
 	let query = {};
 
 	if (req.user.role === "student") {
@@ -180,28 +225,53 @@ exports.updateBooking = asyncHandler(async (req, res, next) => {
 		);
 	}
 
-	// Check for conflicting bookings if date or time is being updated
-	if (date || startTime) {
-		const existingBooking = await Booking.findOne({
-			tutor: booking.tutor,
-			date: date || booking.date,
-			startTime: startTime || booking.startTime,
-			_id: { $ne: booking._id }, // Exclude current booking from conflict check
-		});
+	const updatedDate = date
+		? normalizeDateOnly(date)
+		: normalizeDateOnly(booking.date);
+	const updatedStartTime = startTime || booking.startTime;
+	const updatedEndTime = endTime || booking.endTime;
 
-		if (existingBooking) {
-			return next(
-				new ErrorResponse(
-					"This tutor already has a booking for that time slot",
-					400,
-				),
-			);
-		}
+	const updatedStart = convertTimeToMinutes(updatedStartTime);
+	const updatedEnd = convertTimeToMinutes(updatedEndTime);
+
+	if (updatedEnd <= updatedStart) {
+		return next(new ErrorResponse("End time must be after start time", 400));
 	}
 
-	booking.date = date || booking.date;
-	booking.startTime = startTime || booking.startTime;
-	booking.endTime = endTime || booking.endTime;
+	const updatedDateTime = buildDateTime(updatedDate, updatedStartTime);
+
+	if (updatedDateTime < new Date()) {
+		return next(
+			new ErrorResponse("Cannot schedule a session in the past", 400),
+		);
+	}
+
+	const existingBookings = await Booking.find({
+		tutor: booking.tutor,
+		date: updatedDate,
+		_id: { $ne: booking._id },
+		status: { $ne: "cancelled" },
+	});
+
+	const hasConflict = existingBookings.some((existingBooking) => {
+		const existingStart = convertTimeToMinutes(existingBooking.startTime);
+		const existingEnd = convertTimeToMinutes(existingBooking.endTime);
+
+		return existingStart < updatedEnd && existingEnd > updatedStart;
+	});
+
+	if (hasConflict) {
+		return next(
+			new ErrorResponse(
+				"This tutor already has a booking that overlaps this time slot",
+				400,
+			),
+		);
+	}
+
+	booking.date = updatedDate;
+	booking.startTime = updatedStartTime;
+	booking.endTime = updatedEndTime;
 	booking.notes = notes !== undefined ? notes : booking.notes;
 
 	await booking.save();

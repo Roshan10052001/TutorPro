@@ -60,6 +60,9 @@ exports.logout = (req, res) => {
 exports.getMe = asyncHandler(async (req, res, next) => {
 	const user = await User.findById(req.user._id);
 
+	if (!user) {
+		return next(new ErrorResponse("User not found", 404));
+	}
 	res.status(200).json({
 		success: true,
 		data: user,

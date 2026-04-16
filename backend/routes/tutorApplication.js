@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const { protect } = require("../middleware/auth");
+const { protect, authorize } = require("../middleware/auth");
 const {
 	submitTutorApplication,
 	getTutorApplications,
@@ -9,9 +9,9 @@ const {
 	updateTutorApplicationStatus,
 } = require("../controllers/tutorApplicationController");
 
-router.post("/", protect, submitTutorApplication);
+router.post("/", protect, authorize("tutor"), submitTutorApplication);
 router.get("/", protect, getTutorApplications);
-router.get("/all", protect, getAllTutorApplications);
-router.put("/:id", protect, updateTutorApplicationStatus);
+router.get("/all", protect, authorize("admin"), getAllTutorApplications);
+router.put("/:id", protect, authorize("admin"), updateTutorApplicationStatus);
 
 module.exports = router;
