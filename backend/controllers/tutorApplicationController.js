@@ -1,4 +1,5 @@
 const TutorApplication = require("../models/TutorApplication");
+const User = require("../models/User");
 const asyncHandler = require("../utils/asyncHandler");
 const ErrorResponse = require("../utils/errorResponse");
 
@@ -96,6 +97,17 @@ exports.updateTutorApplicationStatus = asyncHandler(async (req, res, next) => {
 	application.status = status;
 	application.adminNotes = adminNotes || "";
 	await application.save();
+
+	if (status === "approved") {
+		const user = await User.findById(application.user);
+
+		if (!user) {
+			return next(new ErrorResponse("Associated user not found", 404));
+		}
+
+		user.role = "tutor";
+		await user.save();
+	}
 
 	res.status(200).json({
 		success: true,

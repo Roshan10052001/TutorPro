@@ -121,6 +121,9 @@ export function useUpdateTutorApplication() {
 					queryKey: [queryKeys.allTutorApplications],
 				});
 			},
+			onError: (error) => {
+				errorAlert(error);
+			},
 		});
 
 	return { mutate, mutateAsync, isSuccess, isError, reset, error, isPending };

@@ -5,4 +5,5 @@ export const queryKeys = {
 	sessions: "sessions",
 	tutorApplication: "tutorApplication",
 	allTutorApplications: "allTutorApplications",
+	bookings: "bookings",
 };

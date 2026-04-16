@@ -46,6 +46,35 @@ export const HOURS = [
 export const MINUTES = ["00", "15", "30", "45"];
 export const PERIODS = ["AM", "PM"];
 
+export const MAJORS = [
+	"Computer Science",
+	"Data Science",
+	"Information Systems",
+	"Mathematics",
+	"Biology",
+	"Chemistry",
+	"Physics",
+	"Business",
+	"Finance",
+	"Accounting",
+	"Engineering",
+	"Other",
+];
+
+export const YEARS = ["Freshman", "Sophomore", "Junior", "Senior", "Graduate"];
+
+export const SUBJECT_OPTIONS = [
+	"Database Systems",
+	"Data Structures",
+	"Algorithms",
+	"Operating Systems",
+	"Software Engineering",
+	"Calculus",
+	"Statistics",
+	"Physics",
+	"Chemistry",
+];
+
 export const isAuthenticated = () => {
 	try {
 		const token = getStoredUser();

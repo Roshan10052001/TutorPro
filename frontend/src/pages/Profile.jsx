@@ -1,33 +1,37 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import "../styles/Profile.css";
 import Sidebar from "../components/Sidebar";
-import { useCurrentUserProfile } from "../hooks/auth";
+import { AuthContext } from "../context";
+import { useUpdateUserProfile } from "../hooks/user";
+import Swal from "sweetalert2";
+import { MAJORS, SUBJECT_OPTIONS, YEARS } from "../utils";
 
 function Profile() {
-	const { currentUserEmail, currentUserRole, currentUserName } =
-		useCurrentUserProfile();
-
+	const { user, updateUser } = useContext(AuthContext);
+	console.log(user);
 	const [isEditing, setIsEditing] = useState(false);
 	const [formData, setFormData] = useState({
-		name: currentUserName || "",
-		email: currentUserEmail || "",
-		phone: "",
-		address: "",
-		major: "",
-		year: "",
-		subjects: "",
-		experience: "",
+		name: user?.name || "",
+		email: user?.email || "",
+		phone: user?.phone || "",
+		address: user?.address || "",
+		major: user?.major || "",
+		year: user?.year || "",
+		subjects: user?.subjects || [],
+		experience: user?.experience || "",
 	});
 
+	const { mutateAsync: updateProfile, isPending } = useUpdateUserProfile();
+
 	const sidebarRole =
-		currentUserRole === "admin"
+		user?.role === "admin"
 			? "Admin"
-			: currentUserRole === "tutor"
+			: user?.role === "tutor"
 				? "Tutor"
 				: "Student";
 
-	const formattedRole = currentUserRole
-		? currentUserRole.charAt(0).toUpperCase() + currentUserRole.slice(1)
+	const formattedRole = user?.role
+		? user?.role.charAt(0).toUpperCase() + user?.role.slice(1)
 		: "User";
 
 	const handleChange = (e) => {
@@ -38,9 +42,57 @@ function Profile() {
 		}));
 	};
 
-	const handleSave = () => {
-		console.log("Saved profile:", formData);
-		setIsEditing(false);
+	const handleSubjectChange = (subject) => {
+		setFormData((prev) => {
+			const alreadySelected = prev.subjects.includes(subject);
+
+			return {
+				...prev,
+				subjects: alreadySelected
+					? prev.subjects.filter((item) => item !== subject)
+					: [...prev.subjects, subject],
+			};
+		});
+	};
+
+	const handleSave = async () => {
+		const result = await Swal.fire({
+			title: "Confirmation",
+			text: "Are you sure you want to edit this profile?",
+			icon: "question",
+			showCancelButton: true,
+			confirmButtonText: "Yes",
+			cancelButtonText: "Cancel",
+			reverseButtons: true,
+		});
+
+		if (!result.isConfirmed) return;
+		try {
+			const updatedUser = await updateProfile({
+				name: formData.name,
+				email: formData.email,
+				phone: formData.phone || "",
+				address: formData.address || "",
+				major: formData.major || "",
+				year: formData.year || "",
+				subjects: formData.subjects || [],
+				experience: formData.experience || "",
+			});
+			setFormData({
+				name: updatedUser.name || "",
+				email: updatedUser.email || "",
+				phone: updatedUser.phone || "",
+				address: updatedUser.address || "",
+				major: updatedUser.major || "",
+				year: updatedUser.year || "",
+				subjects: updatedUser.subjects || [],
+				experience: updatedUser.experience || "",
+			});
+			updateUser(updatedUser);
+			setIsEditing(false);
+		} catch {
+			//error handled in hook, just reset pending state here
+		}
 	};
 
 	return (
@@ -145,7 +197,7 @@ function Profile() {
 					</div>
 				</section>
 
-				{currentUserRole === "student" && (
+				{user?.role === "student" && (
 					<section className='dashboard-panel profile-card'>
 						<h2>Student Details</h2>
 
@@ -153,13 +205,20 @@ function Profile() {
 							<div className='profile-field'>
 								<label className='profile-label'>Major</label>
 								{isEditing ? (
-									<input
+									<select
 										className='profile-input'
-										type='text'
 										name='major'
 										value={formData.major}
-										onChange={handleChange}
-									/>
+										onChange={handleChange}>
+										<option value=''>Select Major</option>
+										{MAJORS.map((major) => (
+											<option
+												key={major}
+												value={major}>
+												{major}
+											</option>
+										))}
+									</select>
 								) : (
 									<div className='profile-value'>
 										{formData.major || "Not provided"}
@@ -170,13 +229,20 @@ function Profile() {
 							<div className='profile-field'>
 								<label className='profile-label'>Year</label>
 								{isEditing ? (
-									<input
+									<select
 										className='profile-input'
-										type='text'
 										name='year'
 										value={formData.year}
-										onChange={handleChange}
-									/>
+										onChange={handleChange}>
+										<option value=''>Select Year</option>
+										{YEARS.map((year) => (
+											<option
+												key={year}
+												value={year}>
+												{year}
+											</option>
+										))}
+									</select>
 								) : (
 									<div className='profile-value'>
 										{formData.year || "Not provided"}
@@ -187,24 +253,34 @@ function Profile() {
 					</section>
 				)}
 
-				{currentUserRole === "tutor" && (
+				{user?.role === "tutor" && (
 					<section className='dashboard-panel profile-card'>
 						<h2>Tutor Details</h2>
 
 						<div className='profile-grid'>
 							<div className='profile-field'>
 								<label className='profile-label'>Subjects</label>
+
 								{isEditing ? (
-									<input
-										className='profile-input'
-										type='text'
-										name='subjects'
-										value={formData.subjects}
-										onChange={handleChange}
-									/>
+									<div className='checkbox-group'>
+										{SUBJECT_OPTIONS.map((subject) => (
+											<label
+												key={subject}
+												style={{ display: "block" }}>
+												<input
+													type='checkbox'
+													checked={formData.subjects.includes(subject)}
+													onChange={() => handleSubjectChange(subject)}
+												/>{" "}
+												{subject}
+											</label>
+										))}
+									</div>
 								) : (
 									<div className='profile-value'>
-										{formData.subjects || "Not provided"}
+										{formData.subjects.length > 0
+											? formData.subjects.join(", ")
+											: "Not provided"}
 									</div>
 								)}
 							</div>
@@ -234,7 +310,7 @@ function Profile() {
 						<button
 							className='btn-primary'
 							onClick={handleSave}>
-							Save Changes
+							{isPending ? "Saving..." : "Save Changes"}
 						</button>
 					</div>
 				)}

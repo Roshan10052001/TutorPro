@@ -10,6 +10,7 @@ import {
 	useGetTutorApplications,
 	useSubmitTutorApplication,
 } from "../hooks/tutorApplication";
+import Swal from "sweetalert2";
 
 function TutorApply() {
 	const { user } = useContext(AuthContext);
@@ -124,24 +125,41 @@ function TutorApply() {
 			warnAlert("Please add at least one availability slot.");
 			return;
 		}
-		await mutateAsync({
-			name: formData.name.trim(),
-			email: formData.email.trim(),
-			course: formData.course.trim(),
-			availability,
-			bio: formData.bio.trim(),
+
+		const result = await Swal.fire({
+			title: "Confirmation",
+			text: "Are you sure you want to submit this application?",
+			icon: "question",
+			showCancelButton: true,
+			confirmButtonText: "Yes",
+			cancelButtonText: "Cancel",
+			reverseButtons: true,
 		});
 
-		setFormData({
-			name: user?.name || "",
-			email: user?.email || "",
-			course: "",
-			bio: "",
-		});
-		setAvailability([]);
-		resetSlotForm();
-		reset();
-		setIsModalOpen(false);
+		if (!result.isConfirmed) return;
+
+		try {
+			await mutateAsync({
+				name: formData.name.trim(),
+				email: formData.email.trim(),
+				course: formData.course.trim(),
+				availability,
+				bio: formData.bio.trim(),
+			});
+			setFormData({
+				name: user?.name || "",
+				email: user?.email || "",
+				course: "",
+				bio: "",
+			});
+			setAvailability([]);
+			resetSlotForm();
+			reset();
+			setIsModalOpen(false);
+		} catch {
+			//error handled in hook, just reset pending state here
+			reset();
+		}
 	};
 
 	const isSlotIncomplete =

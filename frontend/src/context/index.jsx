@@ -27,8 +27,16 @@ function AuthContextProvider({ children, user: initialUser = null }) {
 	}
 
 	function updateUser(data) {
-		setStoredUser(data);
-		setUser(data);
+		setUser((currentUser) => {
+			const nextUser = {
+				...(currentUser || {}),
+				...(data || {}),
+				token: data?.token || currentUser?.token || "",
+			};
+
+			setStoredUser(nextUser);
+			return nextUser;
+		});
 	}
 
 	const value = useMemo(

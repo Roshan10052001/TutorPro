@@ -22,10 +22,6 @@ function AuthRouter() {
 				element={<SignUp />}
 			/>
 			<Route
-				path='/tutors'
-				element={<Tutors />}
-			/>
-			<Route
 				path='/logout'
 				element={<Logout />}
 			/>

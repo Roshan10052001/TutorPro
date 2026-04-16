@@ -1,6 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const { signup, login, logout } = require("../controllers/authController");
+const {
+	signup,
+	login,
+	logout,
+	getMe,
+} = require("../controllers/authController");
 const { protect } = require("../middleware/auth");
 
 /**
@@ -108,11 +113,6 @@ router.post("/logout", logout);
  *       401:
  *         description: Not authenticated
  */
-router.get("/me", protect, async(req, res) => {
-    res.status(200).json({
-        success: true,
-        user: req.user
-    });
-});
+router.get("/me", protect, getMe);
 
 module.exports = router;

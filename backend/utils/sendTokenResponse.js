@@ -26,6 +26,12 @@ const sendTokenResponse = (user, statusCode, res) => {
 				name: user.name,
 				email: user.email,
 				role: user.role,
+				phone: user.phone || "",
+				address: user.address || "",
+				major: user.major || "",
+				year: user.year || "",
+				subjects: user.subjects || "",
+				experience: user.experience || "",
 			},
 		});
 };

@@ -11,7 +11,6 @@ import {
 	useUpdateTutorApplication,
 } from "../hooks/tutorApplication";
 import { useSessions } from "../hooks/tutor";
-import { errorAlert, successAlert } from "../utils";
 import "../styles/dashboard.css";
 
 function AdminDashboard() {
@@ -50,7 +49,7 @@ function AdminDashboard() {
 		setSelectedApplication(null);
 	};
 
-	const handleApplicationAction = async (application, status) => {
+	const handleSubmit = async (application, status) => {
 		const actionLabel = status === "approved" ? "approve" : "reject";
 		const notes = (
 			adminNotesById[application._id] ??
@@ -59,17 +58,13 @@ function AdminDashboard() {
 		).trim();
 
 		const result = await Swal.fire({
-			title: `Are you sure you want to ${actionLabel} this application?`,
-			text:
-				status === "approved"
-					? "This tutor application will be marked as approved."
-					: "This tutor application will be marked as rejected.",
+			title: "Confirmation",
+			text: `Are you sure you want to ${actionLabel} this application?`,
 			icon: "question",
 			showCancelButton: true,
-			confirmButtonText: status === "approved" ? "Yes, approve" : "Yes, reject",
+			confirmButtonText: "Yes",
 			cancelButtonText: "Cancel",
 			reverseButtons: true,
-			focusCancel: true,
 		});
 
 		if (!result.isConfirmed) return;
@@ -77,23 +72,17 @@ function AdminDashboard() {
 		try {
 			setActiveAction(status);
 			setActiveApplicationId(application._id);
+
 			await updateTutorApplication({
 				applicationId: application._id,
 				status,
 				adminNotes: notes,
 			});
 
-			successAlert(
-				status === "approved"
-					? "Tutor application approved successfully"
-					: "Tutor application rejected successfully",
-			);
-		} catch (error) {
-			errorAlert(error);
+			setSelectedApplication(null);
 		} finally {
 			setActiveAction("");
 			setActiveApplicationId("");
-			setSelectedApplication(null);
 		}
 	};
 
@@ -265,9 +254,7 @@ function AdminDashboard() {
 								<button
 									type='button'
 									className='primary-btn'
-									onClick={() =>
-										handleApplicationAction(selectedApplication, "approved")
-									}
+									onClick={() => handleSubmit(selectedApplication, "approved")}
 									disabled={isActionPending}>
 									{isPending &&
 									activeAction === "approved" &&
@@ -282,9 +269,7 @@ function AdminDashboard() {
 										color: "red",
 										border: "1px solid red",
 									}}
-									onClick={() =>
-										handleApplicationAction(selectedApplication, "rejected")
-									}
+									onClick={() => handleSubmit(selectedApplication, "rejected")}
 									disabled={isActionPending}>
 									{isPending &&
 									activeAction === "rejected" &&
