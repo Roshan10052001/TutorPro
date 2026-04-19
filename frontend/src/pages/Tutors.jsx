@@ -61,6 +61,13 @@ function Tutors() {
 
 							<p>{tutor.bio}</p>
 
+							<button
+								type='button'
+								className='secondary-btn'
+								onClick={() => navigate(`/student/tutors/${tutor._id}`)}>
+								View details & reviews
+							</button>
+
 							<div className='slot-section'>
 								<strong>Available Slots</strong>
 								{tutor.availability.length === 0 ? (

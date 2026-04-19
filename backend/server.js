@@ -1,89 +1,11 @@
-const express = require("express");
 const dotenv = require("dotenv");
-const cors = require("cors");
-const helmet = require("helmet");
-const morgan = require("morgan");
-const rateLimit = require("express-rate-limit");
-const connectDB = require("./config/db");
-const errorHandler = require("./middleware/error");
-const cookieParser = require("cookie-parser");
-const swaggerUi = require("swagger-ui-express");
-const swaggerSpec = require("./config/swagger");
-
 dotenv.config();
 
-// Connect to MongoDB
+const app = require("./app");
+const connectDB = require("./config/db");
+
 connectDB();
 
-const app = express();
-
-//Security Middleware
-
-// Secure HTTP headers
-app.use(helmet());
-
-// Enable CORS
-app.use(cors());
-
-// Prevent abuse / brute force
-const limiter = rateLimit({
-	windowMs: 15 * 60 * 1000, // 15 minutes
-	max: 100, // limit each IP to 100 requests
-	message: "Too many requests, please try again later.",
-});
-
-app.use(limiter);
-
-//Body Parsing
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-
-//Logging (Development)
-if (process.env.NODE_ENV === "development") {
-	app.use(morgan("dev"));
-}
-app.use((req, res, next) => {
-	console.log(`${req.method} ${req.originalUrl}`);
-	next();
-});
-
-// Swagger docs
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
-//Routes
-const authRoutes = require("./routes/auth");
-const tutorRoutes = require("./routes/tutor");
-const bookingRoutes = require("./routes/booking");
-const tutorApplicationRoutes = require("./routes/tutorApplication");
-const userRoutes = require("./routes/user");
-const reviewRoutes = require("./routes/review");
-
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/tutors", tutorRoutes);
-app.use("/api/v1/bookings", bookingRoutes);
-app.use("/api/v1/tutor-application", tutorApplicationRoutes);
-app.use("/api/v1/users", userRoutes);
-app.use("/api/v1/reviews", reviewRoutes);
-
-// Health check
-app.get("/", (req, res) => {
-	res.status(200).json({
-		message: "SLU PeerTutor API is running",
-	});
-});
-
-//404 handler
-app.use((req, res) => {
-	res.status(404).json({
-		message: "Route not found",
-	});
-});
-
-//Error Handler
-app.use(errorHandler);
-
-//Start Server
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {

@@ -4,7 +4,9 @@ import Layout from "../components/Layout";
 import DataTable from "../components/DataTable";
 import Modal from "../components/Modal";
 import { AuthContext } from "../context";
-import { useGetBookings } from "../hooks/booking";
+import { useGetBookings, useUpdateBookingStatus } from "../hooks/booking";
+import { useGetMyReviews } from "../hooks/review";
+import ReviewDialog from "../components/ReviewDialog";
 import BookingForm from "./BookSession/BookingForm";
 import { convertTimeToMinutes } from "../utils/functions";
 
@@ -16,7 +18,21 @@ function Sessions() {
 			: {};
 	const { data: sessions = [], isPending: isSessionsLoading } =
 		useGetBookings(bookingParams);
+	const { data: myReviews = [] } = useGetMyReviews();
+	const { mutate: updateStatus, isPending: isUpdatingStatus } =
+		useUpdateBookingStatus();
+	const reviewedBookingIds = useMemo(
+		() =>
+			new Set(
+				(myReviews || [])
+					.map((review) => review.booking?.toString?.() || review.booking)
+					.filter(Boolean),
+			),
+		[myReviews],
+	);
 	const [isModalOpen, setIsModalOpen] = useState(false);
+	const [reviewTarget, setReviewTarget] = useState(null);
+	const [pendingDecision, setPendingDecision] = useState(null);
 	const location = useLocation();
 	const navigate = useNavigate();
 
@@ -121,8 +137,48 @@ function Sessions() {
 				header: "Notes",
 				render: (session) => session.notes || "No notes",
 			},
+			...(effectiveRole === "tutor"
+				? [
+						{
+							key: "actions",
+							header: "Actions",
+							render: (session) => {
+								if (session.status !== "pending") return "—";
+								return (
+									<button
+										type='button'
+										className='secondary-btn'
+										onClick={() => setPendingDecision(session)}>
+										Review request
+									</button>
+								);
+							},
+						},
+					]
+				: []),
+			...(effectiveRole === "student"
+				? [
+						{
+							key: "review",
+							header: "Review",
+							render: (session) => {
+								if (session.status !== "completed") return "—";
+								if (reviewedBookingIds.has(session._id))
+									return <span className='muted-text'>Reviewed</span>;
+								return (
+									<button
+										type='button'
+										className='secondary-btn'
+										onClick={() => setReviewTarget(session)}>
+										Leave review
+									</button>
+								);
+							},
+						},
+					]
+				: []),
 		],
-		[],
+		[effectiveRole, reviewedBookingIds],
 	);
 
 	const pageTitle =
@@ -148,6 +204,14 @@ function Sessions() {
 		if (location.state) {
 			navigate(location.pathname, { replace: true, state: null });
 		}
+	};
+
+	const handleDecision = (status) => {
+		if (!pendingDecision) return;
+		updateStatus(
+			{ bookingId: pendingDecision._id, status },
+			{ onSuccess: () => setPendingDecision(null) },
+		);
 	};
 
 	useEffect(() => {
@@ -190,6 +254,62 @@ function Sessions() {
 					onCancel={handleCloseModal}
 				/>
 			</Modal>
+
+			<Modal
+				isOpen={Boolean(pendingDecision)}
+				onClose={() => (isUpdatingStatus ? null : setPendingDecision(null))}
+				title='Session Request'
+				size='md'
+				footer={
+					<>
+						<button
+							type='button'
+							className='secondary-btn'
+							disabled={isUpdatingStatus}
+							onClick={() => handleDecision("cancelled")}>
+							Reject
+						</button>
+						<button
+							type='button'
+							className='primary-btn'
+							disabled={isUpdatingStatus}
+							onClick={() => handleDecision("confirmed")}>
+							Approve
+						</button>
+					</>
+				}>
+				{pendingDecision ? (
+					<div>
+						<p>
+							<strong>Student:</strong>{" "}
+							{pendingDecision.student?.name || "Unknown"}
+						</p>
+						<p>
+							<strong>Course:</strong> {pendingDecision.course || "-"}
+						</p>
+						<p>
+							<strong>Date:</strong>{" "}
+							{pendingDecision.date
+								? new Date(pendingDecision.date).toLocaleDateString()
+								: "-"}
+						</p>
+						<p>
+							<strong>Time:</strong> {pendingDecision.startTime} -{" "}
+							{pendingDecision.endTime}
+						</p>
+						<p>
+							<strong>Notes:</strong> {pendingDecision.notes || "No notes"}
+						</p>
+						<p>Approve or reject this session request?</p>
+					</div>
+				) : null}
+			</Modal>
+
+			<ReviewDialog
+				isOpen={Boolean(reviewTarget)}
+				onClose={() => setReviewTarget(null)}
+				booking={reviewTarget}
+			/>
 		</Layout>
 	);
 }
