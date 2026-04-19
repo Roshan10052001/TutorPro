@@ -143,15 +143,33 @@ function Sessions() {
 							key: "actions",
 							header: "Actions",
 							render: (session) => {
-								if (session.status !== "pending") return "—";
-								return (
-									<button
-										type='button'
-										className='secondary-btn'
-										onClick={() => setPendingDecision(session)}>
-										Review request
-									</button>
-								);
+								if (session.status === "pending") {
+									return (
+										<button
+											type='button'
+											className='secondary-btn'
+											onClick={() => setPendingDecision(session)}>
+											Review request
+										</button>
+									);
+								}
+								if (session.status === "confirmed") {
+									return (
+										<button
+											type='button'
+											className='secondary-btn'
+											disabled={isUpdatingStatus}
+											onClick={() =>
+												updateStatus({
+													bookingId: session._id,
+													status: "completed",
+												})
+											}>
+											Mark complete
+										</button>
+									);
+								}
+								return "—";
 							},
 						},
 					]
@@ -178,7 +196,7 @@ function Sessions() {
 					]
 				: []),
 		],
-		[effectiveRole, reviewedBookingIds],
+		[effectiveRole, reviewedBookingIds, updateStatus, isUpdatingStatus],
 	);
 
 	const pageTitle =
