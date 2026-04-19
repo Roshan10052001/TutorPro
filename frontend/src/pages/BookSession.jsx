@@ -1,147 +1,337 @@
-import { useEffect, useMemo, useState } from 'react'
-import Sidebar from '../components/Sidebar'
-import EmptyState from '../components/EmptyState'
-import { useCurrentUserProfile } from '../hooks/auth'
-import { useApprovedTutors, useBookSession } from '../hooks/tutor'
+import { useEffect, useMemo, useState } from "react";
+import Sidebar from "../components/Sidebar";
+import EmptyState from "../components/EmptyState";
+import { useGetTutors } from "../hooks/tutor";
+import { useCreateBooking } from "../hooks/booking";
+import { errorAlert } from "../utils";
+
+const convertTimeToMinutes = (timeString) => {
+	const [time, modifier] = timeString.split(" ");
+	let [hours, minutes] = time.split(":").map(Number);
+
+	if (modifier === "PM" && hours !== 12) hours += 12;
+	if (modifier === "AM" && hours === 12) hours = 0;
+
+	return hours * 60 + minutes;
+};
+
+const convertMinutesToTime = (totalMinutes) => {
+	let hours = Math.floor(totalMinutes / 60);
+	const minutes = totalMinutes % 60;
+	const modifier = hours >= 12 ? "PM" : "AM";
+
+	hours = hours % 12;
+	if (hours === 0) hours = 12;
+
+	return `${hours}:${String(minutes).padStart(2, "0")} ${modifier}`;
+};
+
+const getNextDateForDay = (dayName) => {
+	const days = [
+		"Sunday",
+		"Monday",
+		"Tuesday",
+		"Wednesday",
+		"Thursday",
+		"Friday",
+		"Saturday",
+	];
+
+	const today = new Date();
+	const todayDay = today.getDay();
+	const targetDay = days.indexOf(dayName);
+	let diff = targetDay - todayDay;
+
+	if (diff < 0) diff += 7;
+
+	const result = new Date(today);
+	result.setDate(today.getDate() + diff);
+	result.setHours(0, 0, 0, 0);
+	return result;
+};
 
 function BookSession() {
-  const approvedTutors = useApprovedTutors()
-  const { mutate: bookSession } = useBookSession()
-  const { currentUserEmail, currentUserName } = useCurrentUserProfile()
+	const { data: tutors = [] } = useGetTutors();
+	const approvedTutors = tutors?.filter((tutor) => tutor.status === "approved");
+	const { mutateAsync: bookSession, isPending } = useCreateBooking();
+	// const { user } = useContext(AuthContext);
 
-  const [formData, setFormData] = useState({
-    tutorName: '',
-    course: '',
-    slot: '',
-    note: ''
-  })
+	const [formData, setFormData] = useState({
+		tutor: "",
+		course: "",
+		slot: "",
+		note: "",
+	});
 
-  const availableTutors = useMemo(
-    () => approvedTutors.filter((tutor) => tutor.availability.length > 0),
-    [approvedTutors]
-  )
+	const availableTutors = useMemo(
+		() => approvedTutors.filter((tutor) => tutor.availability.length > 0),
+		[approvedTutors],
+	);
 
-  const selectedTutor = useMemo(
-    () => availableTutors.find((tutor) => tutor.name === formData.tutorName),
-    [availableTutors, formData.tutorName]
-  )
+	const selectedTutor = useMemo(
+		() => availableTutors.find((tutor) => tutor._id === formData.tutor),
+		[availableTutors, formData.tutor],
+	);
 
-  useEffect(() => {
-    if (selectedTutor) {
-      setFormData((prev) => ({
-        ...prev,
-        course: selectedTutor.course,
-        slot: ''
-      }))
-    }
-  }, [selectedTutor])
+	const availableSlots = useMemo(() => {
+		if (!selectedTutor) return [];
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-  }
+		return selectedTutor.availability.flatMap((slot) => {
+			const startMinutes = convertTimeToMinutes(slot.startTime);
+			const endMinutes = convertTimeToMinutes(slot.endTime);
+			const sessionLength = Number(slot.sessionLengthMinutes || 60);
+			const slots = [];
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
+			for (
+				let current = startMinutes;
+				current + sessionLength <= endMinutes;
+				current += sessionLength
+			) {
+				const sessionStart = convertMinutesToTime(current);
+				const sessionEnd = convertMinutesToTime(current + sessionLength);
+				slots.push({
+					label: `${slot.day} - ${sessionStart} to ${sessionEnd}`,
+					day: slot.day,
+					startTime: sessionStart,
+					endTime: sessionEnd,
+				});
+			}
 
-    if (!formData.tutorName || !formData.slot) {
-      alert('Please select tutor and time slot.')
-      return
-    }
+			return slots;
+		});
+	}, [selectedTutor]);
 
-    const result = bookSession({
-      course: formData.course,
-      tutorName: formData.tutorName,
-      studentName: currentUserName,
-      studentEmail: currentUserEmail,
-      slot: formData.slot,
-      note: formData.note
-    })
+	const groupedSlots = useMemo(() => {
+		return availableSlots.reduce((groups, slot) => {
+			if (!groups[slot.day]) {
+				groups[slot.day] = [];
+			}
 
-    alert(result.message)
+			groups[slot.day].push(slot);
+			return groups;
+		}, {});
+	}, [availableSlots]);
 
-    if (!result.ok) return
+	useEffect(() => {
+		if (selectedTutor) {
+			setFormData((prev) => ({
+				...prev,
+				course: selectedTutor.course,
+				slot: "",
+			}));
+		}
+	}, [selectedTutor]);
 
-    setFormData({
-      tutorName: '',
-      course: '',
-      slot: '',
-      note: ''
-    })
-  }
+	const handleChange = (e) => {
+		setFormData({ ...formData, [e.target.name]: e.target.value });
+	};
 
-  return (
-    <div className="dashboard-layout">
-      <Sidebar role="Student" />
+	const handleSubmit = async (e) => {
+		e.preventDefault();
 
-      <main className="dashboard-main">
-        <div className="dashboard-header">
-          <div>
-            <h1>Book a Session</h1>
-            <p>Select an approved tutor and book one open time slot.</p>
-          </div>
-        </div>
+		if (!formData.tutor || !formData.slot) {
+			alert("Please select tutor and time slot.");
+			return;
+		}
 
-        {availableTutors.length === 0 ? (
-          <EmptyState
-            title="No bookable tutors yet"
-            text="There are no approved tutors with open slots right now."
-          />
-        ) : (
-          <section className="dashboard-panel form-panel enhanced-panel">
-            <form className="booking-form" onSubmit={handleSubmit}>
-              <label>Select Tutor</label>
-              <select
-                name="tutorName"
-                value={formData.tutorName}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Choose tutor</option>
-                {availableTutors.map((tutor) => (
-                  <option key={tutor.id} value={tutor.name}>
-                    {tutor.name} - {tutor.course}
-                  </option>
-                ))}
-              </select>
+		const selectedSlot = availableSlots.find(
+			(slot) => slot.label === formData.slot,
+		);
 
-              <label>Course</label>
-              <input type="text" value={formData.course} readOnly />
+		if (!selectedSlot) {
+			alert("Please choose a valid available slot.");
+			return;
+		}
 
-              <label>Available Slot</label>
-              <select
-                name="slot"
-                value={formData.slot}
-                onChange={handleChange}
-                required
-                disabled={!selectedTutor}
-              >
-                <option value="">Choose time slot</option>
-                {selectedTutor &&
-                  selectedTutor.availability.map((slot, index) => (
-                    <option key={index} value={slot}>
-                      {slot}
-                    </option>
-                  ))}
-              </select>
+		const sessionDate = getNextDateForDay(selectedSlot.day);
 
-              <label>Note</label>
-              <textarea
-                name="note"
-                value={formData.note}
-                onChange={handleChange}
-                placeholder="Write a short note for the tutor"
-                rows="4"
-              />
+		try {
+			await bookSession({
+				tutor: formData.tutor,
+				course: formData.course,
+				date: sessionDate.toISOString(),
+				startTime: selectedSlot.startTime,
+				endTime: selectedSlot.endTime,
+				notes: formData.note,
+			});
 
-              <button type="submit" className="primary-btn">
-                Confirm Booking
-              </button>
-            </form>
-          </section>
-        )}
-      </main>
-    </div>
-  )
+			setFormData({
+				tutor: "",
+				course: "",
+				slot: "",
+				note: "",
+			});
+		} catch (error) {
+			errorAlert(error);
+		}
+	};
+
+	return (
+		<div className='dashboard-layout'>
+			<Sidebar role='Student' />
+
+			<main className='dashboard-main'>
+				<div className='dashboard-header'>
+					<div>
+						<h1>Book a Session</h1>
+						<p>Select an approved tutor and book one open time slot.</p>
+					</div>
+				</div>
+
+				{availableTutors.length === 0 ? (
+					<EmptyState
+						title='No bookable tutors yet'
+						text='There are no approved tutors with open slots right now.'
+					/>
+				) : (
+					<section className='dashboard-panel form-panel enhanced-panel'>
+						<form
+							className='booking-form'
+							onSubmit={handleSubmit}>
+							<label>Select Tutor</label>
+							<select
+								name='tutor'
+								value={formData.tutor}
+								onChange={handleChange}
+								required>
+								<option value=''>Choose tutor</option>
+								{availableTutors?.map((tutor) => (
+									<option
+										key={tutor._id}
+										value={tutor._id}>
+										{tutor.name} - {tutor.course}
+									</option>
+								))}
+							</select>
+
+							<label>Course</label>
+							<input
+								type='text'
+								value={formData.course}
+								readOnly
+							/>
+
+							<div
+								style={{
+									display: "flex",
+									flexDirection: "column",
+									gap: "12px",
+								}}>
+								<label>Available Time Slots</label>
+
+								{!selectedTutor ? (
+									<p style={{ color: "#64748b" }}>
+										Select a tutor first to view available time slots.
+									</p>
+								) : availableSlots.length === 0 ? (
+									<p style={{ color: "#64748b" }}>
+										No available slots for this tutor.
+									</p>
+								) : (
+									Object.entries(groupedSlots).map(([day, daySlots]) => (
+										<div
+											key={day}
+											style={{
+												display: "flex",
+												flexDirection: "column",
+												gap: "10px",
+											}}>
+											<h3
+												style={{
+													fontSize: "1rem",
+													fontWeight: 700,
+													color: "#0f172a",
+												}}>
+												{day}
+											</h3>
+
+											<div
+												style={{
+													display: "grid",
+													gridTemplateColumns:
+														"repeat(auto-fill, minmax(180px, 1fr))",
+													gap: "12px",
+												}}>
+												{daySlots.map((slot) => {
+													const isSelected = formData.slot === slot.label;
+
+													return (
+														<button
+															key={slot.label}
+															type='button'
+															onClick={() =>
+																setFormData((prev) => ({
+																	...prev,
+																	slot: slot.label,
+																}))
+															}
+															style={{
+																padding: "14px 16px",
+																borderRadius: "14px",
+																border: isSelected
+																	? "2px solid #1d4ed8"
+																	: "1px solid rgba(148, 163, 184, 0.3)",
+																background: isSelected
+																	? "rgba(37, 99, 235, 0.12)"
+																	: "rgba(255, 255, 255, 0.95)",
+																color: "#0f172a",
+																boxShadow: isSelected
+																	? "0 10px 24px rgba(37, 99, 235, 0.16)"
+																	: "0 6px 16px rgba(15, 23, 42, 0.05)",
+																textAlign: "left",
+																justifyContent: "flex-start",
+																minHeight: "72px",
+															}}>
+															<span
+																style={{
+																	fontWeight: 700,
+																	lineHeight: 1.45,
+																}}>
+																{slot.startTime} - {slot.endTime}
+															</span>
+														</button>
+													);
+												})}
+											</div>
+										</div>
+									))
+								)}
+
+								{formData.slot && (
+									<p
+										style={{
+											padding: "10px 12px",
+											borderRadius: "12px",
+											background: "rgba(37, 99, 235, 0.08)",
+											color: "#1d4ed8",
+											fontWeight: 600,
+										}}>
+										Selected Slot: {formData.slot}
+									</p>
+								)}
+							</div>
+
+							<label>Note</label>
+							<textarea
+								name='note'
+								value={formData.note}
+								onChange={handleChange}
+								placeholder='Write a short note for the tutor'
+								rows='4'
+							/>
+
+							<button
+								type='submit'
+								className='primary-btn'
+								disabled={isPending}>
+								{isPending ? "Booking..." : "Confirm Booking"}
+							</button>
+						</form>
+					</section>
+				)}
+			</main>
+		</div>
+	);
 }
 
-export default BookSession
+export default BookSession;

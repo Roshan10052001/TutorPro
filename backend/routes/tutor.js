@@ -1,9 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const { protect } = require("../middleware/auth");
-const User = require("../models/User");
-const asyncHandler = require("../utils/asyncHandler");
-const ErrorResponse = require("../utils/errorResponse");
+const { protect, authorize } = require("../middleware/auth");
+const {
+	getTutors,
+	getTutorById,
+	deleteTutor,
+} = require("../controllers/tutorController");
 
 /**
  * @swagger
@@ -61,43 +63,7 @@ const ErrorResponse = require("../utils/errorResponse");
  *       401:
  *         description: Not authenticated
  */
-router.get(
-	"/",
-	protect,
-	asyncHandler(async (req, res, next) => {
-		const { course, name, page = 1, limit = 10 } = req.query;
-
-		const query = { role: "tutor" };
-
-		// Filter by name (partial, case-insensitive)
-		if (name) {
-			query.name = { $regex: name, $options: "i" };
-		}
-
-		// Filter by course if the User model has a courses field
-		if (course) {
-			query.courses = course;
-		}
-
-		const skip = (parseInt(page) - 1) * parseInt(limit);
-
-		const tutors = await User.find(query)
-			.skip(skip)
-			.limit(parseInt(limit))
-			.sort({ name: 1 });
-
-		const total = await User.countDocuments(query);
-
-		res.status(200).json({
-			success: true,
-			count: tutors.length,
-			total,
-			page: parseInt(page),
-			pages: Math.ceil(total / parseInt(limit)),
-			data: tutors,
-		});
-	}),
-);
+router.get("/", protect, getTutors);
 
 /**
  * @swagger
@@ -131,21 +97,40 @@ router.get(
  *       404:
  *         description: Tutor not found
  */
-router.get(
-	"/:id",
-	protect,
-	asyncHandler(async (req, res, next) => {
-		const tutor = await User.findById(req.params.id);
-
-		if (!tutor || tutor.role !== "tutor") {
-			return next(new ErrorResponse("Tutor not found", 404));
-		}
-
-		res.status(200).json({
-			success: true,
-			data: tutor,
-		});
-	}),
-);
+router.get("/:id", protect, getTutorById);
 
 module.exports = router;
+
+/**
+ * @swagger
+ * /tutors/{id}:
+ *   delete:
+ *     summary: Delete a tutor
+ *     tags: [Tutors]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Tutor user ID
+ *     responses:
+ *       200:
+ *         description: Tutor deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Not authenticated
+ *       404:
+ *         description: Tutor not found
+ */
+router.delete("/:id", protect, authorize("admin"), deleteTutor);

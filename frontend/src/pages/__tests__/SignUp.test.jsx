@@ -2,23 +2,36 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { AuthContext } from "../../context";
 import SignUp from "../SignUp";
 
-const registerUserMock = vi.fn();
+const signupMutateAsyncMock = vi.fn();
+const authenticateMock = vi.fn();
+const navigateMock = vi.fn();
 
 vi.mock("../../components/Navbar", () => ({
 	default: () => <div>Navbar</div>,
 }));
 
-vi.mock("../../context/AppContext", () => ({
-	useApp: () => ({
-		registerUser: registerUserMock,
+vi.mock("../../hooks/auth", () => ({
+	useSignup: () => ({
+		mutateAsync: signupMutateAsyncMock,
 	}),
 }));
 
+vi.mock("react-router-dom", async () => {
+	const actual = await vi.importActual("react-router-dom");
+	return {
+		...actual,
+		useNavigate: () => navigateMock,
+	};
+});
+
 describe("SignUp page", () => {
 	beforeEach(() => {
-		registerUserMock.mockReset();
+		signupMutateAsyncMock.mockReset();
+		authenticateMock.mockReset();
+		navigateMock.mockReset();
 		vi.spyOn(window, "alert").mockImplementation(() => {});
 	});
 
@@ -30,9 +43,11 @@ describe("SignUp page", () => {
 		const user = userEvent.setup();
 
 		render(
-			<MemoryRouter>
-				<SignUp />
-			</MemoryRouter>,
+			<AuthContext.Provider value={{ authenticate: authenticateMock }}>
+				<MemoryRouter>
+					<SignUp />
+				</MemoryRouter>
+			</AuthContext.Provider>,
 		);
 
 		await user.type(screen.getByPlaceholderText("Enter your name"), "Pelumi");
@@ -52,18 +67,27 @@ describe("SignUp page", () => {
 		await user.click(screen.getByRole("button", { name: /create account/i }));
 
 		expect(window.alert).toHaveBeenCalledWith("Passwords do not match.");
-		expect(registerUserMock).not.toHaveBeenCalled();
+		expect(signupMutateAsyncMock).not.toHaveBeenCalled();
 	});
 
 	it("calls registerUser when inputs are valid", async () => {
-		registerUserMock.mockReturnValue({ ok: true });
+		signupMutateAsyncMock.mockResolvedValue({
+			user: {
+				name: "Pelumi",
+				email: "pelumi@slu.edu",
+				role: "student",
+			},
+			token: "signup-token",
+		});
 
 		const user = userEvent.setup();
 
 		render(
-			<MemoryRouter>
-				<SignUp />
-			</MemoryRouter>,
+			<AuthContext.Provider value={{ authenticate: authenticateMock }}>
+				<MemoryRouter>
+					<SignUp />
+				</MemoryRouter>
+			</AuthContext.Provider>,
 		);
 
 		await user.type(screen.getByPlaceholderText("Enter your name"), "Pelumi");
@@ -82,6 +106,18 @@ describe("SignUp page", () => {
 
 		await user.click(screen.getByRole("button", { name: /create account/i }));
 
-		expect(registerUserMock).toHaveBeenCalled();
+		expect(signupMutateAsyncMock).toHaveBeenCalledWith({
+			name: "Pelumi",
+			email: "pelumi@slu.edu",
+			password: "secret123",
+			role: "student",
+		});
+		expect(authenticateMock).toHaveBeenCalledWith({
+			name: "Pelumi",
+			email: "pelumi@slu.edu",
+			role: "student",
+			token: "signup-token",
+		});
+		expect(navigateMock).toHaveBeenCalledWith("/signin");
 	});
 });

@@ -1,19 +1,21 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { AuthContext } from "../../context";
 import SignIn from "../SignIn";
 
-const loginUserMock = vi.fn();
+const loginMutateAsyncMock = vi.fn();
 const navigateMock = vi.fn();
+const authenticateMock = vi.fn();
 
 vi.mock("../../components/Navbar", () => ({
 	default: () => <div>Navbar</div>,
 }));
 
-vi.mock("../../context/AppContext", () => ({
-	useApp: () => ({
-		loginUser: loginUserMock,
+vi.mock("../../hooks/auth", () => ({
+	useLogin: () => ({
+		mutateAsync: loginMutateAsyncMock,
 	}),
 }));
 
@@ -27,8 +29,9 @@ vi.mock("react-router-dom", async () => {
 
 describe("SignIn page", () => {
 	beforeEach(() => {
-		loginUserMock.mockReset();
+		loginMutateAsyncMock.mockReset();
 		navigateMock.mockReset();
+		authenticateMock.mockReset();
 		vi.spyOn(window, "alert").mockImplementation(() => {});
 	});
 
@@ -37,17 +40,19 @@ describe("SignIn page", () => {
 	});
 
 	it("navigates to the student dashboard on successful student login", async () => {
-		loginUserMock.mockReturnValue({
-			ok: true,
+		loginMutateAsyncMock.mockResolvedValue({
 			user: { role: "student" },
+			token: "token-123",
 		});
 
 		const user = userEvent.setup();
 
 		render(
-			<MemoryRouter>
-				<SignIn />
-			</MemoryRouter>,
+			<AuthContext.Provider value={{ authenticate: authenticateMock }}>
+				<MemoryRouter>
+					<SignIn />
+				</MemoryRouter>
+			</AuthContext.Provider>,
 		);
 
 		await user.type(
@@ -61,22 +66,34 @@ describe("SignIn page", () => {
 
 		await user.click(screen.getByRole("button", { name: /sign in/i }));
 
-		expect(loginUserMock).toHaveBeenCalledWith({
+		expect(loginMutateAsyncMock).toHaveBeenCalledWith({
 			email: "pelumi@slu.edu",
 			password: "secret123",
+		});
+		expect(authenticateMock).toHaveBeenCalledWith({
+			role: "student",
+			token: "token-123",
 		});
 		expect(navigateMock).toHaveBeenCalledWith("/student-dashboard");
 	});
 
-	it("shows error when login credentials are invalid", async () => {
-		loginUserMock.mockReturnValue({ ok: false });
+	it("does not navigate when login credentials are invalid", async () => {
+		loginMutateAsyncMock.mockRejectedValue({
+			response: {
+				data: {
+					message: "Invalid email or password.",
+				},
+			},
+		});
 
 		const user = userEvent.setup();
 
 		render(
-			<MemoryRouter>
-				<SignIn />
-			</MemoryRouter>,
+			<AuthContext.Provider value={{ authenticate: authenticateMock }}>
+				<MemoryRouter>
+					<SignIn />
+				</MemoryRouter>
+			</AuthContext.Provider>,
 		);
 
 		await user.type(
@@ -90,21 +107,30 @@ describe("SignIn page", () => {
 
 		await user.click(screen.getByRole("button", { name: /sign in/i }));
 
-		expect(window.alert).toHaveBeenCalled();
+		await waitFor(() => {
+			expect(loginMutateAsyncMock).toHaveBeenCalledWith({
+				email: "wrong@slu.edu",
+				password: "wrongpass",
+			});
+		});
+		expect(authenticateMock).not.toHaveBeenCalled();
+		expect(navigateMock).not.toHaveBeenCalled();
 	});
 
 	it("navigates to tutor dashboard when tutor logs in", async () => {
-		loginUserMock.mockReturnValue({
-			ok: true,
+		loginMutateAsyncMock.mockResolvedValue({
 			user: { role: "tutor" },
+			token: "token-456",
 		});
 
 		const user = userEvent.setup();
 
 		render(
-			<MemoryRouter>
-				<SignIn />
-			</MemoryRouter>,
+			<AuthContext.Provider value={{ authenticate: authenticateMock }}>
+				<MemoryRouter>
+					<SignIn />
+				</MemoryRouter>
+			</AuthContext.Provider>,
 		);
 
 		await user.type(
@@ -118,6 +144,10 @@ describe("SignIn page", () => {
 
 		await user.click(screen.getByRole("button", { name: /sign in/i }));
 
+		expect(authenticateMock).toHaveBeenCalledWith({
+			role: "tutor",
+			token: "token-456",
+		});
 		expect(navigateMock).toHaveBeenCalledWith("/tutor-dashboard");
 	});
 });

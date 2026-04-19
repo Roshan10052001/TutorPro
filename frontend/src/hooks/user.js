@@ -1,0 +1,121 @@
+import { useMutation } from "@tanstack/react-query";
+import { axiosInstance } from "../axiosInstance";
+import { errorAlert, successAlert } from "../utils";
+import { queryClient } from "../react-query/index";
+import { queryKeys } from "../react-query/constants";
+import { getStoredUser, setStoredUser } from "../storage";
+
+const updateUserProfile = async (payload) => {
+	const { data } = await axiosInstance({
+		url: "/users/profile",
+		method: "PUT",
+		data: payload,
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
+
+	return data?.data;
+};
+
+const deleteUserProfile = async () => {
+	const { data } = await axiosInstance({
+		url: "/users/profile",
+		method: "DELETE",
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
+
+	return data;
+};
+
+const deleteUserByAdmin = async (userId) => {
+	const { data } = await axiosInstance({
+		url: `/users/${userId}`,
+		method: "DELETE",
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
+
+	return data;
+};
+
+export function useUpdateUserProfile() {
+	const { mutate, mutateAsync, isSuccess, isError, reset, error, isPending } =
+		useMutation({
+			mutationFn: updateUserProfile,
+			onSuccess: (updatedUser) => {
+				successAlert("Profile updated successfully");
+
+				const storedUser = getStoredUser();
+
+				if (storedUser) {
+					setStoredUser({
+						...storedUser,
+						...updatedUser,
+					});
+				}
+
+				queryClient.invalidateQueries({
+					queryKey: [queryKeys.user],
+				});
+			},
+			onError: (error) => {
+				errorAlert(error);
+			},
+		});
+
+	return { mutate, mutateAsync, isSuccess, isError, reset, error, isPending };
+}
+
+export function useDeleteUserProfile() {
+	const { mutate, mutateAsync, isSuccess, isError, reset, error, isPending } =
+		useMutation({
+			mutationFn: deleteUserProfile,
+			onSuccess: () => {
+				successAlert("Account deleted successfully");
+
+				queryClient.invalidateQueries({
+					queryKey: [queryKeys.user],
+				});
+			},
+			onError: (error) => {
+				errorAlert(error);
+			},
+		});
+
+	return { mutate, mutateAsync, isSuccess, isError, reset, error, isPending };
+}
+
+export function useDeleteUserAccount() {
+	const { mutate, mutateAsync, isSuccess, isError, reset, error, isPending } =
+		useMutation({
+			mutationFn: deleteUserByAdmin,
+			onSuccess: () => {
+				successAlert("Account deleted successfully");
+
+				queryClient.invalidateQueries({
+					queryKey: [queryKeys.user],
+				});
+				queryClient.invalidateQueries({
+					queryKey: [queryKeys.tutors],
+				});
+				queryClient.invalidateQueries({
+					queryKey: [queryKeys.tutorApplication],
+				});
+				queryClient.invalidateQueries({
+					queryKey: [queryKeys.allTutorApplications],
+				});
+				queryClient.invalidateQueries({
+					queryKey: [queryKeys.bookings],
+				});
+			},
+			onError: (mutationError) => {
+				errorAlert(mutationError);
+			},
+		});
+
+	return { mutate, mutateAsync, isSuccess, isError, reset, error, isPending };
+}

@@ -1,7 +1,5 @@
-import { useContext } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { axiosInstance } from "../axiosInstance";
-import { AuthContext } from "../context";
 import { getStoredUser, setStoredUser } from "../storage";
 import { errorAlert, successAlert } from "../utils";
 import { queryKeys } from "../react-query/constants";
@@ -59,42 +57,27 @@ export async function fetchAuthenticatedUserRequest() {
 		method: "GET",
 		headers: {
 			"Content-Type": "application/json",
-			...(token ? { Authorization: `Bearer ${token}` } : {}),
 		},
 	});
 
-	if (data?.user && token) {
+	if (data?.data && token) {
 		setStoredUser({
-			...data.user,
+			...data.data,
 			token,
 		});
 	}
 
-	return data?.user ?? null;
+	return data?.data ?? null;
 }
 
 export function useAuthenticatedUser(enabled = true) {
 	const token = getStoredUser()?.token;
-
 	return useQuery({
 		enabled: Boolean(enabled && token),
 		queryKey: [queryKeys.user, token],
 		queryFn: fetchAuthenticatedUserRequest,
 		retry: false,
 	});
-}
-
-export function useCurrentUserProfile() {
-	const { user, role, isAuthenticated } = useContext(AuthContext);
-	const currentUser = user;
-
-	return {
-		currentUser,
-		currentUserRole: role || currentUser?.role || "",
-		currentUserEmail: currentUser?.email || "",
-		currentUserName: currentUser?.name || "",
-		isLoggedIn: Boolean(isAuthenticated),
-	};
 }
 
 export function useSignup() {

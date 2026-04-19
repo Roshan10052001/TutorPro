@@ -1,36 +1,15 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
-import Home from './pages/Home'
-import SignIn from './pages/SignIn'
-import SignUp from './pages/SignUp'
-import Logout from './pages/Logout'
-import StudentDashboard from './pages/StudentDashboard'
-import TutorDashboard from './pages/TutorDashboard'
-import AdminDashboard from './pages/AdminDashboard'
-import Tutors from './pages/Tutors'
-import BookSession from './pages/BookSession'
-import Sessions from './pages/Sessions'
-import Profile from './pages/Profile'
-import TutorApply from './pages/TutorApply'
-import './styles/pages.css'
+import AppRoutes from "./routes";
+import "./styles/pages.css";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function App() {
-  return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/signin" element={<SignIn />} />
-      <Route path="/signup" element={<SignUp />} />
-      <Route path="/logout" element={<Logout />} />
-      <Route path="/student-dashboard" element={<StudentDashboard />} />
-      <Route path="/tutor-dashboard" element={<TutorDashboard />} />
-      <Route path="/admin-dashboard" element={<AdminDashboard />} />
-      <Route path="/tutors" element={<Tutors />} />
-      <Route path="/book-session" element={<BookSession />} />
-      <Route path="/sessions" element={<Sessions />} />
-      <Route path="/profile" element={<Profile />} />
-      <Route path="/tutor-apply" element={<TutorApply />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  )
+	return (
+		<>
+			<AppRoutes />
+			<ToastContainer />
+		</>
+	);
 }
 
-export default App
+export default App;

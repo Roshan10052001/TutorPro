@@ -13,9 +13,8 @@ const bookingSchema = new mongoose.Schema(
 			required: [true, "Tutor is required"],
 		},
 		course: {
-			type: mongoose.Schema.Types.ObjectId,
-			ref: "Course",
-			required: [true, "Course is required"],
+			type: String,
+			required: [true, "Course name is required"],
 		},
 		date: {
 			type: Date,
@@ -37,6 +36,7 @@ const bookingSchema = new mongoose.Schema(
 		notes: {
 			type: String,
 			maxLength: 500,
+			default: "",
 		},
 	},
 	{

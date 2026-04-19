@@ -56,3 +56,13 @@ exports.logout = (req, res) => {
 		message: "Logged out successfully",
 	});
 };
+
+exports.getMe = asyncHandler(async (req, res, next) => {
+	if (!req.user) {
+		return next(new ErrorResponse("User not found", 404));
+	}
+	res.status(200).json({
+		success: true,
+		data: req.user,
+	});
+});
