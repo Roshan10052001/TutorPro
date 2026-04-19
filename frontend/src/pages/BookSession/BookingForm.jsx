@@ -28,7 +28,7 @@ function BookingForm({ onSuccess, onCancel, initialTutorId = "" }) {
 	);
 
 	const selectedTutor = useMemo(
-		() => availableTutors.find((tutor) => tutor.userId === formData.tutor),
+		() => availableTutors.find((tutor) => tutor._id === formData.tutor),
 		[availableTutors, formData.tutor],
 	);
 
@@ -36,7 +36,7 @@ function BookingForm({ onSuccess, onCancel, initialTutorId = "" }) {
 		if (!initialTutorId) return;
 
 		const hasMatchingTutor = availableTutors.some(
-			(tutor) => tutor.userId === initialTutorId,
+			(tutor) => tutor._id === initialTutorId,
 		);
 
 		if (!hasMatchingTutor) return;
