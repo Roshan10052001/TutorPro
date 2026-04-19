@@ -10,7 +10,7 @@ import {
 	useGetTutorApplications,
 	useSubmitTutorApplication,
 } from "../hooks/tutorApplication";
-import Swal from "sweetalert2";
+import { useConfirm } from "../components/ConfirmProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,6 +35,7 @@ function TutorApply() {
 		isPending: isApplicationsLoading,
 	} = useGetTutorApplications();
 	const { mutateAsync, isPending, reset } = useSubmitTutorApplication();
+	const confirm = useConfirm();
 	const [isModalOpen, setIsModalOpen] = useState(false);
 
 	const initialFormData = useMemo(
@@ -191,17 +192,11 @@ function TutorApply() {
 			return;
 		}
 
-		const result = await Swal.fire({
+		const ok = await confirm({
 			title: "Confirmation",
-			text: "Are you sure you want to submit this application?",
-			icon: "question",
-			showCancelButton: true,
-			confirmButtonText: "Yes",
-			cancelButtonText: "Cancel",
-			reverseButtons: true,
+			description: "Are you sure you want to submit this application?",
 		});
-
-		if (!result.isConfirmed) return;
+		if (!ok) return;
 
 		try {
 			await mutateAsync({

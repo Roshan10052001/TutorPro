@@ -1,32 +1,28 @@
 import { useContext, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import Swal from "sweetalert2";
 import Navbar from "../components/Navbar";
 import { AuthContext } from "../context";
+import { useConfirm } from "../components/ConfirmProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 function Logout() {
 	const { logout } = useContext(AuthContext);
 	const navigate = useNavigate();
+	const confirm = useConfirm();
 
 	useEffect(() => {
 		let isMounted = true;
 
 		const confirmLogout = async () => {
-			const result = await Swal.fire({
+			const ok = await confirm({
 				title: "Confirmation",
-				text: "Are you sure you want to log out?",
-				icon: "question",
-				showCancelButton: true,
-				confirmButtonText: "Yes",
-				cancelButtonText: "Cancel",
-				reverseButtons: true,
+				description: "Are you sure you want to log out?",
 			});
 
 			if (!isMounted) return;
 
-			if (result.isConfirmed) {
+			if (ok) {
 				logout();
 				return;
 			}
@@ -39,7 +35,7 @@ function Logout() {
 		return () => {
 			isMounted = false;
 		};
-	}, [logout, navigate]);
+	}, [confirm, logout, navigate]);
 
 	return (
 		<div className="min-h-screen bg-gradient-to-b from-slate-50 to-blue-50/60">

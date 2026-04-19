@@ -2,7 +2,7 @@ import { useContext, useState } from "react";
 import Layout from "../components/Layout";
 import { AuthContext } from "../context";
 import { useUpdateUserProfile } from "../hooks/user";
-import Swal from "sweetalert2";
+import { useConfirm } from "../components/ConfirmProvider";
 import { MAJORS, SUBJECT_OPTIONS, YEARS } from "../utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,7 @@ function Profile() {
 	});
 
 	const { mutateAsync: updateProfile, isPending } = useUpdateUserProfile();
+	const confirm = useConfirm();
 
 	const sidebarRole =
 		effectiveRole === "admin"
@@ -57,17 +58,11 @@ function Profile() {
 	};
 
 	const handleSave = async () => {
-		const result = await Swal.fire({
+		const ok = await confirm({
 			title: "Confirmation",
-			text: "Are you sure you want to edit this profile?",
-			icon: "question",
-			showCancelButton: true,
-			confirmButtonText: "Yes",
-			cancelButtonText: "Cancel",
-			reverseButtons: true,
+			description: "Are you sure you want to edit this profile?",
 		});
-
-		if (!result.isConfirmed) return;
+		if (!ok) return;
 		try {
 			const updatedUser = await updateProfile({
 				name: formData.name,

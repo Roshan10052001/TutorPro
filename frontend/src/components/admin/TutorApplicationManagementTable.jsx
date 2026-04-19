@@ -1,7 +1,7 @@
 import { useState } from "react";
-import Swal from "sweetalert2";
 import DataTable from "../DataTable";
 import Modal from "../Modal";
+import { useConfirm } from "../ConfirmProvider";
 import { useUpdateTutorApplication } from "../../hooks/tutorApplication";
 import { useDeleteTutor } from "../../hooks/tutor";
 import { useDeleteUserAccount } from "../../hooks/user";
@@ -31,6 +31,7 @@ function TutorApplicationManagementTable({
 		useDeleteTutor();
 	const { mutateAsync: deleteUserAccount, isPending: isDeletingUser } =
 		useDeleteUserAccount();
+	const confirm = useConfirm();
 	const [adminNotesById, setAdminNotesById] = useState({});
 	const [selectedApplication, setSelectedApplication] = useState(null);
 	const [activeAction, setActiveAction] = useState("");
@@ -58,17 +59,11 @@ function TutorApplicationManagementTable({
 			""
 		).trim();
 
-		const result = await Swal.fire({
+		const ok = await confirm({
 			title: "Confirmation",
-			text: `Are you sure you want to ${actionLabel} this application?`,
-			icon: "question",
-			showCancelButton: true,
-			confirmButtonText: "Yes",
-			cancelButtonText: "Cancel",
-			reverseButtons: true,
+			description: `Are you sure you want to ${actionLabel} this application?`,
 		});
-
-		if (!result.isConfirmed) return;
+		if (!ok) return;
 
 		try {
 			setActiveAction(status);
@@ -86,17 +81,14 @@ function TutorApplicationManagementTable({
 	};
 
 	const handleReverseTutor = async (application) => {
-		const result = await Swal.fire({
+		const ok = await confirm({
 			title: "Reverse Tutor Role",
-			text: "This will remove the tutor profile and change the user back to a student. Continue?",
-			icon: "warning",
-			showCancelButton: true,
-			confirmButtonText: "Yes, reverse it",
-			cancelButtonText: "Cancel",
-			reverseButtons: true,
+			description:
+				"This will remove the tutor profile and change the user back to a student. Continue?",
+			confirmText: "Yes, reverse it",
+			variant: "destructive",
 		});
-
-		if (!result.isConfirmed) return;
+		if (!ok) return;
 
 		try {
 			setActiveAction("reverse");
@@ -113,17 +105,14 @@ function TutorApplicationManagementTable({
 		const userId = application?.user?._id;
 		if (!userId) return;
 
-		const result = await Swal.fire({
+		const ok = await confirm({
 			title: "Delete Account",
-			text: "This will permanently delete the user, their tutor applications, and related bookings.",
-			icon: "warning",
-			showCancelButton: true,
-			confirmButtonText: "Yes, delete account",
-			cancelButtonText: "Cancel",
-			reverseButtons: true,
+			description:
+				"This will permanently delete the user, their tutor applications, and related bookings.",
+			confirmText: "Yes, delete account",
+			variant: "destructive",
 		});
-
-		if (!result.isConfirmed) return;
+		if (!ok) return;
 
 		try {
 			setActiveAction("delete-account");

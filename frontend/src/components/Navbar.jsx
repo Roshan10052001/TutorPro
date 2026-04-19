@@ -1,29 +1,24 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../context";
-import Swal from "sweetalert2";
 import { getDashboardPath } from "../routes/path";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "./ConfirmProvider";
 
 function Navbar() {
 	const { role, activeView, effectiveRole, isAuthenticated, logout } =
 		useContext(AuthContext);
 	const navigate = useNavigate();
+	const confirm = useConfirm();
 
 	const dashboardPath = getDashboardPath(role, activeView);
 
 	const handleLogout = async () => {
-		const result = await Swal.fire({
+		const ok = await confirm({
 			title: "Confirmation",
-			text: "Are you sure you want to log out?",
-			icon: "question",
-			showCancelButton: true,
-			confirmButtonText: "Yes",
-			cancelButtonText: "Cancel",
-			reverseButtons: true,
+			description: "Are you sure you want to log out?",
 		});
-
-		if (!result.isConfirmed) return;
+		if (!ok) return;
 
 		logout();
 		navigate("/signin");

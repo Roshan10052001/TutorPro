@@ -7,8 +7,8 @@ import {
 	convertTimeToMinutes,
 	getNextDateForDay,
 } from "../../utils/functions";
-import Swal from "sweetalert2";
 import { AuthContext } from "../../context";
+import { useConfirm } from "../../components/ConfirmProvider";
 import { errorAlert, warnAlert } from "../../utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,7 @@ function BookingForm({ onSuccess, onCancel, initialTutorId = "" }) {
 	const { data: tutors = [] } = useGetTutors();
 	const approvedTutors = tutors.filter((tutor) => tutor.status === "approved");
 	const { mutateAsync: bookSession, isPending } = useCreateBooking();
+	const confirm = useConfirm();
 
 	const [formData, setFormData] = useState({
 		tutor: "",
@@ -158,17 +159,11 @@ function BookingForm({ onSuccess, onCancel, initialTutorId = "" }) {
 			selectedSlot.startTime
 		);
 
-		const result = await Swal.fire({
+		const ok = await confirm({
 			title: "Confirmation",
-			text: "Are you sure you want to book this session?",
-			icon: "question",
-			showCancelButton: true,
-			confirmButtonText: "Yes",
-			cancelButtonText: "Cancel",
-			reverseButtons: true,
+			description: "Are you sure you want to book this session?",
 		});
-
-		if (!result.isConfirmed) return;
+		if (!ok) return;
 
 		try {
 			await bookSession({

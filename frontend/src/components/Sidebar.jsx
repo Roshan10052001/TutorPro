@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import Swal from "sweetalert2";
+import { useConfirm } from "./ConfirmProvider";
 import { AuthContext } from "../context";
 import { getDashboardPath } from "../routes/path";
 import { cn } from "@/lib/utils";
@@ -54,19 +54,14 @@ function Sidebar({ role, name, onNavigate }) {
 		useContext(AuthContext);
 	const links = getNavigationLinks(role, user?.role);
 	const navigate = useNavigate();
+	const confirm = useConfirm();
 
 	const handleLogout = async () => {
-		const result = await Swal.fire({
+		const ok = await confirm({
 			title: "Confirmation",
-			text: "Are you sure you want to log out?",
-			icon: "question",
-			showCancelButton: true,
-			confirmButtonText: "Yes",
-			cancelButtonText: "Cancel",
-			reverseButtons: true,
+			description: "Are you sure you want to log out?",
 		});
-
-		if (!result.isConfirmed) return;
+		if (!ok) return;
 
 		logout();
 		onNavigate?.();
