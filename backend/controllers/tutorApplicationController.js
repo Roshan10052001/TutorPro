@@ -7,7 +7,10 @@ const ErrorResponse = require("../utils/errorResponse");
 // @route   POST /api/v1/tutor-applications
 // @access  Private
 exports.submitTutorApplication = asyncHandler(async (req, res, next) => {
-	const { name, email, course, availability, bio } = req.body;
+	const { course, availability, bio } = req.body;
+
+	const name = req.user.name;
+	const email = req.user.email;
 
 	if (!name || !email || !course || !bio) {
 		return next(new ErrorResponse("Please provide all required fields", 400));
@@ -34,7 +37,7 @@ exports.submitTutorApplication = asyncHandler(async (req, res, next) => {
 		);
 	}
 
-	const application = await TutorApplication.create({
+	await TutorApplication.create({
 		user: req.user._id,
 		name,
 		email,

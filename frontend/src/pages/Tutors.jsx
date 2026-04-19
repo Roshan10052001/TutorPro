@@ -17,7 +17,6 @@ function Tutors() {
 
 	const approvedTutors = tutors.filter((tutor) => tutor.status === "approved");
 
-	console.log(approvedTutors);
 	const filteredTutors = useMemo(() => {
 		return approvedTutors.filter(
 			(tutor) =>

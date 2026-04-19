@@ -10,7 +10,7 @@ import {
 import Swal from "sweetalert2";
 import "./styles.css";
 import { AuthContext } from "../../context";
-import { warnAlert } from "../../utils";
+import { errorAlert, warnAlert } from "../../utils";
 
 function BookingForm({ onSuccess, onCancel, initialTutorId = "" }) {
 	const { user } = useContext(AuthContext);
@@ -208,7 +208,7 @@ function BookingForm({ onSuccess, onCancel, initialTutorId = "" }) {
 
 			onSuccess?.();
 		} catch (error) {
-			console.log(error);
+			errorAlert(error);
 		}
 	};
 
