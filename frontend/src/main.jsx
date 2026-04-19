@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import AuthContextProvider from './context'
 import { queryClient } from './react-query'
+import './index.css'
 import './styles/global.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
