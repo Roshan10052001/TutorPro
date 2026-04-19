@@ -3,7 +3,7 @@ import Sidebar from "../components/Sidebar";
 import EmptyState from "../components/EmptyState";
 import { useGetTutors } from "../hooks/tutor";
 import { useCreateBooking } from "../hooks/booking";
-import { errorAlert } from "../utils";
+import { errorAlert, warnAlert } from "../utils";
 
 const convertTimeToMinutes = (timeString) => {
 	const [time, modifier] = timeString.split(" ");
@@ -42,7 +42,7 @@ const getNextDateForDay = (dayName) => {
 	const targetDay = days.indexOf(dayName);
 	let diff = targetDay - todayDay;
 
-	if (diff < 0) diff += 7;
+	if (diff <= 0) diff += 7;
 
 	const result = new Date(today);
 	result.setDate(today.getDate() + diff);
@@ -130,7 +130,7 @@ function BookSession() {
 		e.preventDefault();
 
 		if (!formData.tutor || !formData.slot) {
-			alert("Please select tutor and time slot.");
+			warnAlert("Please select tutor and time slot.");
 			return;
 		}
 
@@ -139,7 +139,7 @@ function BookSession() {
 		);
 
 		if (!selectedSlot) {
-			alert("Please choose a valid available slot.");
+			warnAlert("Please choose a valid available slot.");
 			return;
 		}
 
