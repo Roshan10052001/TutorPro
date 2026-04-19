@@ -67,7 +67,7 @@ const {
  *       404:
  *         description: Tutor not found
  */
-router.post("/", protect, authorize("student", "admin"), createBooking);
+router.post("/", protect, authorize("student", "tutor", "admin"), createBooking);
 
 /**
  * @swagger

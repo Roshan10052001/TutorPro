@@ -7,7 +7,7 @@ import Swal from "sweetalert2";
 import { MAJORS, SUBJECT_OPTIONS, YEARS } from "../utils";
 
 function Profile() {
-	const { user, updateUser } = useContext(AuthContext);
+	const { user, effectiveRole, activeView, updateUser } = useContext(AuthContext);
 	const [isEditing, setIsEditing] = useState(false);
 	const [formData, setFormData] = useState({
 		name: user?.name || "",
@@ -23,9 +23,9 @@ function Profile() {
 	const { mutateAsync: updateProfile, isPending } = useUpdateUserProfile();
 
 	const sidebarRole =
-		user?.role === "admin"
+		effectiveRole === "admin"
 			? "Admin"
-			: user?.role === "tutor"
+			: effectiveRole === "tutor"
 				? "Tutor"
 				: "Student";
 
@@ -168,6 +168,15 @@ function Profile() {
 						<div className='profile-value'>{formattedRole}</div>
 					</div>
 
+					{user?.role === "tutor" ? (
+						<div className='profile-field'>
+							<label className='profile-label'>Current View</label>
+							<div className='profile-value'>
+								{activeView === "student" ? "Student" : "Tutor"}
+							</div>
+						</div>
+					) : null}
+
 					<div className='profile-field'>
 						<label className='profile-label'>University</label>
 						<div className='profile-value'>Saint Louis University</div>
@@ -175,7 +184,7 @@ function Profile() {
 				</div>
 			</section>
 
-			{user?.role === "student" && (
+			{effectiveRole === "student" && (
 				<section className='dashboard-panel profile-card'>
 					<h2>Student Details</h2>
 
@@ -231,7 +240,7 @@ function Profile() {
 				</section>
 			)}
 
-			{user?.role === "tutor" && (
+			{effectiveRole === "tutor" && (
 				<section className='dashboard-panel profile-card'>
 					<h2>Tutor Details</h2>
 

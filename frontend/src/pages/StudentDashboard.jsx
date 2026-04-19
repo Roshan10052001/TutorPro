@@ -13,10 +13,10 @@ import { convertTimeToMinutes } from "../utils/functions";
 
 function StudentDashboard() {
 	const navigate = useNavigate();
-	const { user } = useContext(AuthContext);
+	const { user, role } = useContext(AuthContext);
 	const { data: tutors = [] } = useGetTutors();
 	const { data: sessions = [], isPending: isSessionsLoading } =
-		useGetBookings();
+		useGetBookings(role === "tutor" ? { view: "student" } : {});
 
 	const approvedTutors = tutors.filter((tutor) => tutor.status === "approved");
 

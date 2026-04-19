@@ -16,17 +16,17 @@ function Layout({
 	headerAction,
 	children,
 }) {
-	const { user } = useContext(AuthContext);
+	const { user, effectiveRole } = useContext(AuthContext);
 	const location = useLocation();
 	const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
 	const resolvedPage = useMemo(() => {
 		if (page) return page;
 
-		if (user?.role === "admin") return "Admin";
-		if (user?.role === "tutor") return "Tutor";
+		if (effectiveRole === "admin") return "Admin";
+		if (effectiveRole === "tutor") return "Tutor";
 		return "Student";
-	}, [page, user?.role]);
+	}, [page, effectiveRole]);
 
 	useEffect(() => {
 		setIsMobileNavOpen(false);

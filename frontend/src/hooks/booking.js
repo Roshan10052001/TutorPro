@@ -4,10 +4,11 @@ import { errorAlert, successAlert } from "../utils";
 import { queryClient } from "../react-query/index";
 import { queryKeys } from "../react-query/constants";
 
-const fetchBookings = async () => {
+const fetchBookings = async (params = {}) => {
 	const { data } = await axiosInstance({
 		url: "/bookings",
 		method: "GET",
+		params,
 		headers: {
 			"Content-Type": "application/json",
 		},
@@ -91,10 +92,10 @@ const cancelBooking = async (bookingId) => {
 	return data?.data;
 };
 
-export const useGetBookings = () => {
+export const useGetBookings = (params = {}) => {
 	return useQuery({
-		queryKey: [queryKeys.bookings],
-		queryFn: fetchBookings,
+		queryKey: [queryKeys.bookings, params],
+		queryFn: () => fetchBookings(params),
 		onError: (error) => {
 			errorAlert(error);
 		},

@@ -1,6 +1,8 @@
 import * as React from "react";
 import { Fragment, lazy, Suspense } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
+import { useContext } from "react";
+import { AuthContext } from "../context";
 
 const privateRoutes = [
 	{
@@ -22,6 +24,17 @@ const privateRoutes = [
 ];
 
 function Tutor() {
+	const { role, activeView } = useContext(AuthContext);
+
+	if (!(role === "tutor" && activeView === "tutor")) {
+		return (
+			<Navigate
+				to={role === "tutor" ? "/student/dashboard" : "/"}
+				replace
+			/>
+		);
+	}
+
 	return (
 		<Routes>
 			{privateRoutes.map(({ path, element: Component }) => {

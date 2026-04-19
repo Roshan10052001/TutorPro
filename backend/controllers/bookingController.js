@@ -133,11 +133,12 @@ exports.createBooking = asyncHandler(async (req, res, next) => {
 exports.getBookings = asyncHandler(async (req, res, next) => {
 	//Admin can see all bookings, students see their bookings, tutors see bookings where they are the tutor
 	let query = {};
+	const requestedView = req.query.view;
 
 	if (req.user.role === "student") {
 		query.student = req.user._id;
 	} else if (req.user.role === "tutor") {
-		query.tutor = req.user._id;
+		query[requestedView === "student" ? "student" : "tutor"] = req.user._id;
 	}
 
 	const bookings = await Booking.find(query)

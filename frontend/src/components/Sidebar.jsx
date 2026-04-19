@@ -2,37 +2,53 @@ import { useContext } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { AuthContext } from "../context";
+import { getDashboardPath } from "../routes/path";
 import "../styles/sidebar.css";
 
-const navigationByRole = {
-	Student: [
-		{ to: "/", label: "Home", end: true },
-		{ to: "/student/dashboard", label: "Dashboard" },
-		{ to: "/student/tutors", label: "Find Tutors" },
-		{ to: "/student/tutor-apply", label: "Become a Tutor" },
-		{ to: "/student/sessions", label: "Sessions" },
-		{ to: "/student/profile", label: "Profile" },
-	],
-	Tutor: [
-		{ to: "/", label: "Home", end: true },
-		{ to: "/tutor/dashboard", label: "Dashboard" },
-		{ to: "/tutor/tutor-apply", label: "My Applications" },
-		{ to: "/tutor/sessions", label: "My Sessions" },
-		{ to: "/tutor/profile", label: "Profile" },
-	],
-	Admin: [
-		{ to: "/", label: "Home", end: true },
-		{ to: "/admin/dashboard", label: "Dashboard" },
-		{ to: "/admin/tutor-applications", label: "Tutor Applications" },
-		{ to: "/admin/tutor-accounts", label: "Manage Tutors" },
-		{ to: "/admin/sessions", label: "All Sessions" },
-		{ to: "/admin/profile", label: "Profile" },
-	],
-};
+const studentLinks = [
+	{ to: "/", label: "Home", end: true },
+	{ to: "/student/dashboard", label: "Dashboard" },
+	{ to: "/student/tutors", label: "Find Tutors" },
+	{ to: "/student/tutor-apply", label: "Become a Tutor" },
+	{ to: "/student/sessions", label: "Sessions" },
+	{ to: "/student/profile", label: "Profile" },
+];
+
+const tutorLinks = [
+	{ to: "/", label: "Home", end: true },
+	{ to: "/tutor/dashboard", label: "Dashboard" },
+	{ to: "/tutor/tutor-apply", label: "My Applications" },
+	{ to: "/tutor/sessions", label: "My Sessions" },
+	{ to: "/tutor/profile", label: "Profile" },
+];
+
+const adminLinks = [
+	{ to: "/", label: "Home", end: true },
+	{ to: "/admin/dashboard", label: "Dashboard" },
+	{ to: "/admin/tutor-applications", label: "Tutor Applications" },
+	{ to: "/admin/tutor-accounts", label: "Manage Tutors" },
+	{ to: "/admin/sessions", label: "All Sessions" },
+	{ to: "/admin/profile", label: "Profile" },
+];
+
+function getNavigationLinks(role, userRole) {
+	if (role === "Tutor") return tutorLinks;
+	if (role === "Admin") return adminLinks;
+
+	if (userRole === "tutor") {
+		return [
+			...studentLinks.filter((link) => link.to !== "/student/tutor-apply"),
+			{ to: "/tutor/tutor-apply", label: "My Applications" },
+		];
+	}
+
+	return studentLinks;
+}
 
 function Sidebar({ role, name, onNavigate }) {
-	const links = navigationByRole[role] || navigationByRole.Student;
-	const { logout } = useContext(AuthContext);
+	const { user, activeView, canSwitchView, logout, switchView } =
+		useContext(AuthContext);
+	const links = getNavigationLinks(role, user?.role);
 	const navigate = useNavigate();
 
 	const handleLogout = async () => {
@@ -53,6 +69,12 @@ function Sidebar({ role, name, onNavigate }) {
 		navigate("/signin");
 	};
 
+	const handleSwitchView = (nextView) => {
+		switchView(nextView);
+		onNavigate?.();
+		navigate(getDashboardPath(user?.role, nextView));
+	};
+
 	return (
 		<nav
 			className='sidebar'
@@ -65,6 +87,28 @@ function Sidebar({ role, name, onNavigate }) {
 						<p>TutorPro</p>
 					</div>
 				</div>
+
+				{canSwitchView ? (
+					<div className='sidebar-mode-switcher'>
+						<span className='sidebar-mode-label'>
+							Current view: {activeView === "student" ? "Student" : "Tutor"}
+						</span>
+						<div className='sidebar-mode-actions'>
+							<button
+								type='button'
+								className={`sidebar-mode-btn${activeView === "student" ? " active" : ""}`}
+								onClick={() => handleSwitchView("student")}>
+								Student View
+							</button>
+							<button
+								type='button'
+								className={`sidebar-mode-btn${activeView === "tutor" ? " active" : ""}`}
+								onClick={() => handleSwitchView("tutor")}>
+								Tutor View
+							</button>
+						</div>
+					</div>
+				) : null}
 			</div>
 
 			<div className='sidebar-links'>

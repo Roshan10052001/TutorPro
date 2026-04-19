@@ -40,7 +40,7 @@ function SignIn() {
 			const role = result?.user?.role;
 
 			if (role === "student") navigate(`${BasePaths.STUDENT}/dashboard`);
-			if (role === "tutor") navigate(`${BasePaths.TUTOR}/dashboard`);
+			if (role === "tutor") navigate("/select-view");
 			if (role === "admin") navigate(`${BasePaths.ADMIN}/dashboard`);
 		} catch (error) {
 			errorAlert(error);

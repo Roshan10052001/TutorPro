@@ -22,7 +22,7 @@ function TutorDashboard() {
 	const navigate = useNavigate();
 	const { data: tutors = [] } = useGetTutors();
 	const { data: sessions = [], isPending: isSessionsLoading } =
-		useGetBookings();
+		useGetBookings({ view: "tutor" });
 	const {
 		mutateAsync: updateTutorAvailability,
 		isPending: isUpdatingAvailability,

@@ -18,6 +18,43 @@
     gap: 12px;
 }
 
+.sidebar-mode-switcher {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 16px;
+    background: rgba(37, 99, 235, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sidebar-mode-label {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--billiken-blue-dark);
+}
+
+.sidebar-mode-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.sidebar-mode-btn {
+    border: 1px solid rgba(37, 99, 235, 0.16);
+    background: rgba(255, 255, 255, 0.86);
+    color: var(--text-secondary);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-weight: 700;
+}
+
+.sidebar-mode-btn.active {
+    background: var(--billiken-blue);
+    color: white;
+    border-color: var(--billiken-blue);
+}
+
 .sidebar-logo-mark {
     width: 42px;
     height: 42px;

@@ -3,17 +3,14 @@ import "../styles/navbar.css";
 import { useContext } from "react";
 import { AuthContext } from "../context";
 import Swal from "sweetalert2";
+import { getDashboardPath } from "../routes/path";
 
 function Navbar() {
-	const { role, isAuthenticated, logout } = useContext(AuthContext);
+	const { role, activeView, effectiveRole, isAuthenticated, logout } =
+		useContext(AuthContext);
 	const navigate = useNavigate();
 
-	const dashboardPath =
-		role === "admin"
-			? "/admin/dashboard"
-			: role === "tutor"
-				? "/tutor/dashboard"
-				: "/student/dashboard";
+	const dashboardPath = getDashboardPath(role, activeView);
 
 	const handleLogout = async () => {
 		const result = await Swal.fire({
@@ -50,15 +47,19 @@ function Navbar() {
 							<Link to={dashboardPath}>Dashboard</Link>
 							{/* {role === "student" && <Link to='/student/tutors'>Tutors</Link>}
 							{role === "tutor" && <Link to='/tutor/apply'>Apply</Link>} */}
-							{role === "student" ? (
+							{effectiveRole === "student" ? (
 								<Link to='/student/sessions'>Sessions</Link>
 							) : (
-								role === "tutor" && <Link to='/tutor/sessions'>Sessions</Link>
+								effectiveRole === "tutor" && (
+									<Link to='/tutor/sessions'>Sessions</Link>
+								)
 							)}
-							{role === "student" ? (
+							{effectiveRole === "student" ? (
 								<Link to='/student/profile'>Profile</Link>
 							) : (
-								role === "tutor" && <Link to='/tutor/profile'>Profile</Link>
+								effectiveRole === "tutor" && (
+									<Link to='/tutor/profile'>Profile</Link>
+								)
 							)}
 						</>
 					) : (

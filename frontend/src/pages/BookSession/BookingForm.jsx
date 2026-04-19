@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import EmptyState from "../../components/EmptyState";
 import { useGetTutors } from "../../hooks/tutor";
 import { useCreateBooking } from "../../hooks/booking";
@@ -9,8 +9,11 @@ import {
 } from "../../utils/functions";
 import Swal from "sweetalert2";
 import "./styles.css";
+import { AuthContext } from "../../context";
+import { warnAlert } from "../../utils";
 
 function BookingForm({ onSuccess, onCancel, initialTutorId = "" }) {
+	const { user } = useContext(AuthContext);
 	const { data: tutors = [] } = useGetTutors();
 	const approvedTutors = tutors.filter((tutor) => tutor.status === "approved");
 	const { mutateAsync: bookSession, isPending } = useCreateBooking();
@@ -21,6 +24,8 @@ function BookingForm({ onSuccess, onCancel, initialTutorId = "" }) {
 		slot: "",
 		note: "",
 	});
+
+	const [isSelfBooking, setIsSelfBooking] = useState(false);
 
 	const availableTutors = useMemo(
 		() => approvedTutors.filter((tutor) => tutor.availability.length > 0),
@@ -106,11 +111,9 @@ function BookingForm({ onSuccess, onCancel, initialTutorId = "" }) {
 
 	useEffect(() => {
 		if (!formData.slot) return;
-
 		const selectedSlot = availableSlots.find(
 			(slot) => slot.label === formData.slot,
 		);
-
 		if (selectedSlot?.isBooked) {
 			setFormData((prev) => ({
 				...prev,
@@ -118,6 +121,29 @@ function BookingForm({ onSuccess, onCancel, initialTutorId = "" }) {
 			}));
 		}
 	}, [availableSlots, formData.slot]);
+
+	useEffect(() => {
+		if (!selectedTutor || !user?.id) {
+			setIsSelfBooking(false);
+			return;
+		}
+
+		const isCurrentUserSelected =
+			selectedTutor.userId?.toString() === user.id?.toString();
+
+		setIsSelfBooking(isCurrentUserSelected);
+
+		if (isCurrentUserSelected) {
+			setFormData((prev) => ({
+				...prev,
+				slot: "",
+			}));
+
+			// replace this with your real warning util
+			// warningAlert("You cannot book yourself as your own tutor.");
+			warnAlert("You cannot book yourself as your own tutor.");
+		}
+	}, [selectedTutor, user?.id]);
 
 	const handleChange = (event) => {
 		setFormData((prev) => ({
@@ -128,9 +154,12 @@ function BookingForm({ onSuccess, onCancel, initialTutorId = "" }) {
 
 	const handleSubmit = async (event) => {
 		event.preventDefault();
-
+		if (isSelfBooking) {
+			warnAlert("You cannot book yourself as your own tutor.");
+			return;
+		}
 		if (!formData.tutor || !formData.slot) {
-			window.alert("Please select tutor and time slot.");
+			warnAlert("Please select tutor and time slot.");
 			return;
 		}
 
@@ -139,7 +168,7 @@ function BookingForm({ onSuccess, onCancel, initialTutorId = "" }) {
 		);
 
 		if (!selectedSlot) {
-			window.alert("Please choose a valid available slot.");
+			warnAlert("Please choose a valid available slot.");
 			return;
 		}
 

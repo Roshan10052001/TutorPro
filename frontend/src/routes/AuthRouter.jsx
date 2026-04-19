@@ -3,8 +3,8 @@ import { Route, Routes } from "react-router-dom";
 import Home from "../pages/Home";
 import SignIn from "../pages/SignIn";
 import SignUp from "../pages/SignUp";
-import Tutors from "../pages/Tutors";
 import Logout from "../pages/Logout";
+import SelectView from "../pages/SelectView";
 
 function AuthRouter() {
 	return (
@@ -20,6 +20,10 @@ function AuthRouter() {
 			<Route
 				path='/signup'
 				element={<SignUp />}
+			/>
+			<Route
+				path='/select-view'
+				element={<SelectView />}
 			/>
 			<Route
 				path='/logout'

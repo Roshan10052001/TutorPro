@@ -3,15 +3,12 @@ import Navbar from "../components/Navbar";
 import "../styles/home.css";
 import { AuthContext } from "../context";
 import { useContext } from "react";
+import { getDashboardPath } from "../routes/path";
 
 function Home() {
-	const { user, isAuthenticated } = useContext(AuthContext);
-	const dashboardPath =
-		user?.role === "admin"
-			? "/admin/dashboard"
-			: user?.role === "tutor"
-				? "/tutor/dashboard"
-				: "/student/dashboard";
+	const { user, activeView, effectiveRole, isAuthenticated } =
+		useContext(AuthContext);
+	const dashboardPath = getDashboardPath(user?.role, activeView);
 
 	return (
 		<div className='page-shell'>
@@ -41,7 +38,7 @@ function Home() {
 											Go to Dashboard
 										</Link>
 
-										{user?.role === "student" && (
+										{effectiveRole === "student" && (
 											<Link
 												to='/student/tutors'
 												className='secondary-btn'>
