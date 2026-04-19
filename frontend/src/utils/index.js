@@ -109,5 +109,7 @@ export const errorAlert = (error) => {
 		error?.response?.data?.error ||
 		defaultErrorMessage;
 
+	console.log(errorMessage);
+
 	toast.error(errorMessage, toastOptions);
 };
