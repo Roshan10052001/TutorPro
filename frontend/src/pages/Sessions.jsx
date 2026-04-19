@@ -4,7 +4,11 @@ import Layout from "../components/Layout";
 import DataTable from "../components/DataTable";
 import Modal from "../components/Modal";
 import { AuthContext } from "../context";
-import { useGetBookings } from "../hooks/booking";
+import {
+	useGetBookings,
+	useUpdateBookingStatus,
+	useCancelBooking,
+} from "../hooks/booking";
 import BookingForm from "./BookSession/BookingForm";
 import { convertTimeToMinutes } from "../utils/functions";
 
@@ -14,8 +18,13 @@ function Sessions() {
 		role === "tutor"
 			? { view: activeView === "student" ? "student" : "tutor" }
 			: {};
+
 	const { data: sessions = [], isPending: isSessionsLoading } =
 		useGetBookings(bookingParams);
+
+	const updateBookingStatusMutation = useUpdateBookingStatus();
+	const cancelBookingMutation = useCancelBooking();
+
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const location = useLocation();
 	const navigate = useNavigate();
@@ -70,6 +79,66 @@ function Sessions() {
 		);
 	}, [filteredSessions]);
 
+	const handleStatusUpdate = (bookingId, status) => {
+		updateBookingStatusMutation.mutate({
+			bookingId,
+			status,
+		});
+	};
+
+	const handleCancelBooking = (bookingId) => {
+		cancelBookingMutation.mutate(bookingId);
+	};
+
+	const getStatusMeta = (status) => {
+		const normalizedStatus = (status || "pending").toLowerCase();
+
+		const statusMap = {
+			pending: {
+				label: "Pending",
+				className: "pending",
+			},
+			confirmed: {
+				label: "Confirmed",
+				className: "confirmed",
+			},
+			completed: {
+				label: "Completed",
+				className: "completed",
+			},
+			cancelled: {
+				label: "Cancelled",
+				className: "cancelled",
+			},
+		};
+
+		return (
+			statusMap[normalizedStatus] || {
+				label: normalizedStatus,
+				className: normalizedStatus,
+			}
+		);
+	};
+
+	const getAvailableActions = (status) => {
+		const normalizedStatus = (status || "pending").toLowerCase();
+
+		const actionMap = {
+			pending: [
+				{ value: "confirmed", label: "Mark as Confirmed" },
+				{ value: "cancelled", label: "Cancel Booking" },
+			],
+			confirmed: [
+				{ value: "completed", label: "Mark as Completed" },
+				{ value: "cancelled", label: "Cancel Booking" },
+			],
+			completed: [],
+			cancelled: [],
+		};
+
+		return actionMap[normalizedStatus] || [];
+	};
+
 	const columns = useMemo(
 		() => [
 			{
@@ -110,19 +179,93 @@ function Sessions() {
 			{
 				key: "status",
 				header: "Status",
-				render: (session) => (
-					<span className={`status-badge ${session.status || "pending"}`}>
-						{session.status || "pending"}
-					</span>
-				),
+				render: (session) => {
+					const statusMeta = getStatusMeta(session.status);
+
+					return (
+						<span className={`status-badge ${statusMeta.className}`}>
+							{statusMeta.label}
+						</span>
+					);
+				},
 			},
 			{
 				key: "notes",
 				header: "Notes",
 				render: (session) => session.notes || "No notes",
 			},
+			...(effectiveRole === "tutor" || effectiveRole === "admin"
+				? [
+						{
+							key: "actions",
+							header: "Actions",
+							render: (session) => {
+								const availableActions = getAvailableActions(session.status);
+								const isBusy =
+									updateBookingStatusMutation.isPending ||
+									cancelBookingMutation.isPending;
+
+								if (availableActions.length === 0) {
+									return (
+										<span
+											style={{
+												color: "#6b7280",
+												fontSize: "0.9rem",
+												fontWeight: 500,
+											}}>
+											No actions available
+										</span>
+									);
+								}
+
+								return (
+									<select
+										defaultValue=""
+										disabled={isBusy}
+										style={{
+											padding: "8px 10px",
+											borderRadius: "8px",
+											border: "1px solid #d1d5db",
+											backgroundColor: "#fff",
+											minWidth: "180px",
+											cursor: isBusy ? "not-allowed" : "pointer",
+										}}
+										onChange={(event) => {
+											const selectedValue = event.target.value;
+
+											if (!selectedValue) return;
+
+											if (selectedValue === "cancelled") {
+												handleCancelBooking(session._id);
+											} else {
+												handleStatusUpdate(session._id, selectedValue);
+											}
+
+											event.target.value = "";
+										}}>
+										<option value="">
+											{isBusy ? "Updating..." : "Choose action"}
+										</option>
+
+										{availableActions.map((action) => (
+											<option
+												key={action.value}
+												value={action.value}>
+												{action.label}
+											</option>
+										))}
+									</select>
+								);
+							},
+						},
+					]
+				: []),
 		],
-		[],
+		[
+			effectiveRole,
+			updateBookingStatusMutation.isPending,
+			cancelBookingMutation.isPending,
+		],
 	);
 
 	const pageTitle =

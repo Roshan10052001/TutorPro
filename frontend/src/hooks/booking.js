@@ -70,7 +70,7 @@ const deleteBooking = async (bookingId) => {
 const updateBookingStatus = async ({ bookingId, status }) => {
 	const { data } = await axiosInstance({
 		url: `/bookings/${bookingId}/status`,
-		method: "PUT",
+		method: "PATCH",
 		data: { status },
 		headers: {
 			"Content-Type": "application/json",
@@ -83,7 +83,7 @@ const updateBookingStatus = async ({ bookingId, status }) => {
 const cancelBooking = async (bookingId) => {
 	const { data } = await axiosInstance({
 		url: `/bookings/${bookingId}/cancel`,
-		method: "POST",
+		method: "PATCH",
 		headers: {
 			"Content-Type": "application/json",
 		},
