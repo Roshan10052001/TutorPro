@@ -121,6 +121,9 @@ export function useCreateBooking() {
 				queryClient.invalidateQueries({
 					queryKey: [queryKeys.bookings],
 				});
+				queryClient.invalidateQueries({
+					queryKey: [queryKeys.tutors],
+				});
 			},
 			onError: (error) => {
 				errorAlert(error);

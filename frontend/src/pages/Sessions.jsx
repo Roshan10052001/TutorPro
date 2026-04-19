@@ -1,14 +1,21 @@
-import Sidebar from "../components/Sidebar";
-import SessionCard from "../components/SessionCard";
-import EmptyState from "../components/EmptyState";
-import { useGetTutors } from "../hooks/tutor";
-import { useContext } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import Layout from "../components/Layout";
+import DataTable from "../components/DataTable";
+import Modal from "../components/Modal";
 import { AuthContext } from "../context";
+import { useGetBookings } from "../hooks/booking";
+import BookingForm from "./BookSession/BookingForm";
+import { convertTimeToMinutes } from "../utils/functions";
 
 function Sessions() {
-	const sessions = [];
-	const { data: tutors = [] } = useGetTutors();
+	const { data: sessions = [], isPending: isSessionsLoading } = useGetBookings();
 	const { user } = useContext(AuthContext);
+	const [isModalOpen, setIsModalOpen] = useState(false);
+	const location = useLocation();
+	const navigate = useNavigate();
+
+	const requestedTutorId = location.state?.tutorId || "";
 
 	const sidebarRole =
 		user?.role === "admin"
@@ -17,70 +24,166 @@ function Sessions() {
 				? "Tutor"
 				: "Student";
 
-	const myTutorProfile = tutors?.find(
-		(tutor) =>
-			tutor.email.trim().toLowerCase() === user?.email.trim().toLowerCase(),
+	const filteredSessions = useMemo(() => {
+		if (user?.role === "student") {
+			return sessions.filter(
+				(session) => session.student?._id?.toString() === user?.id?.toString(),
+			);
+		}
+
+		if (user?.role === "tutor") {
+			return sessions.filter(
+				(session) => session.tutor?._id?.toString() === user?.id?.toString(),
+			);
+		}
+
+		return sessions;
+	}, [sessions, user?.id, user?.role]);
+
+	const sortedSessions = useMemo(() => {
+		const getSessionDateTime = (session) => {
+			if (!session?.date) return 0;
+
+			const sessionDate = new Date(session.date);
+			const startMinutes = convertTimeToMinutes(session.startTime || "12:00 AM");
+
+			sessionDate.setHours(
+				Math.floor(startMinutes / 60),
+				startMinutes % 60,
+				0,
+				0,
+			);
+
+			return sessionDate.getTime();
+		};
+
+		return [...filteredSessions].sort(
+			(firstSession, secondSession) =>
+				getSessionDateTime(firstSession) - getSessionDateTime(secondSession),
+		);
+	}, [filteredSessions]);
+
+	const columns = useMemo(
+		() => [
+			{
+				key: "tutor",
+				header: "Tutor",
+				render: (session) => session.tutor?.name || "Unknown",
+			},
+			{
+				key: "student",
+				header: "Student",
+				render: (session) => session.student?.name || "Unknown",
+			},
+			{
+				key: "course",
+				header: "Course",
+			},
+			{
+				key: "date",
+				header: "Date",
+				render: (session) =>
+					session.date
+						? new Date(session.date).toLocaleDateString(undefined, {
+								weekday: "short",
+								month: "short",
+								day: "numeric",
+								year: "numeric",
+							})
+						: "-",
+			},
+			{
+				key: "time",
+				header: "Time",
+				render: (session) =>
+					session.startTime && session.endTime
+						? `${session.startTime} - ${session.endTime}`
+						: "-",
+			},
+			{
+				key: "status",
+				header: "Status",
+				render: (session) => (
+					<span className={`status-badge ${session.status || "pending"}`}>
+						{session.status || "pending"}
+					</span>
+				),
+			},
+			{
+				key: "notes",
+				header: "Notes",
+				render: (session) => session.notes || "No notes",
+			},
+		],
+		[],
 	);
 
-	let filteredSessions = sessions;
+	const pageTitle =
+		user?.role === "admin"
+			? "All Sessions"
+			: user?.role === "tutor"
+				? "Tutor Sessions"
+				: "My Sessions";
 
-	if (user?.role === "student") {
-		filteredSessions = sessions.filter(
-			(session) =>
-				session.studentEmail.trim().toLowerCase() ===
-				user?.email.trim().toLowerCase(),
-		);
-	}
+	const pageSubtitle =
+		user?.role === "student"
+			? "Review your booked sessions and reserve a new one when you need help."
+			: user?.role === "tutor"
+				? "Track the sessions students have scheduled with you."
+				: "Monitor all tutoring sessions happening across the platform.";
 
-	if (user?.role === "tutor") {
-		filteredSessions = myTutorProfile
-			? sessions.filter((session) => session.tutor === myTutorProfile.name)
-			: [];
-	}
+	const handleOpenModal = () => {
+		setIsModalOpen(true);
+	};
+
+	const handleCloseModal = () => {
+		setIsModalOpen(false);
+		if (location.state) {
+			navigate(location.pathname, { replace: true, state: null });
+		}
+	};
+
+	useEffect(() => {
+		if (user?.role !== "student") return;
+		if (!location.state?.openBooking) return;
+
+		setIsModalOpen(true);
+	}, [location.state, user?.role]);
 
 	return (
-		<div className='dashboard-layout'>
-			<Sidebar role={sidebarRole} />
+		<Layout
+			page={sidebarRole}
+			title={pageTitle}
+			subtitle={pageSubtitle}
+			buttonText={user?.role === "student" ? "Book New Session" : undefined}
+			onButtonClick={user?.role === "student" ? handleOpenModal : undefined}>
+			<section className='dashboard-panel enhanced-panel'>
+				<h2>Session List</h2>
+				<DataTable
+					columns={columns}
+					data={sortedSessions}
+					isLoading={isSessionsLoading}
+					emptyTitle='No sessions yet'
+					emptyText={
+						user?.role === "student"
+							? 'Click "Book New Session" to schedule your first tutoring session.'
+							: "There are no sessions to show right now."
+					}
+				/>
+			</section>
 
-			<main className='dashboard-main'>
-				<div className='dashboard-header'>
-					<div>
-						<h1>
-							{user?.role === "admin"
-								? "All Sessions"
-								: user?.role === "tutor"
-									? "Tutor Sessions"
-									: "My Sessions"}
-						</h1>
-						<p>View the session list based on your role.</p>
-					</div>
-				</div>
-
-				<section className='dashboard-panel enhanced-panel'>
-					<h2>Session List</h2>
-					{filteredSessions.length === 0 ? (
-						<EmptyState
-							title='No sessions available'
-							text='Your session list is empty right now.'
-						/>
-					) : (
-						filteredSessions.map((session) => (
-							<SessionCard
-								key={session.id}
-								course={session.course}
-								tutor={
-									user?.role === "student"
-										? `Tutor: ${session.tutor}`
-										: `Student: ${session.student}`
-								}
-								time={session.time}
-								status={session.status}
-							/>
-						))
-					)}
-				</section>
-			</main>
-		</div>
+			<Modal
+				isOpen={isModalOpen}
+				onClose={handleCloseModal}
+				title='Book New Session'
+				size='lg'>
+				<BookingForm
+					initialTutorId={requestedTutorId}
+					onSuccess={handleCloseModal}
+					onCancel={handleCloseModal}
+				/>
+			</Modal>
+		</Layout>
 	);
 }
 

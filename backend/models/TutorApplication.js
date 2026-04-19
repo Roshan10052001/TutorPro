@@ -23,8 +23,49 @@ const tutorApplicationSchema = new mongoose.Schema(
 			required: [true, "Course is required"],
 			trim: true,
 		},
+		// availability: {
+		// 	type: [String],
+		// 	required: true,
+		// 	validate: {
+		// 		validator: function (value) {
+		// 			return Array.isArray(value) && value.length > 0;
+		// 		},
+		// 		message: "At least one availability slot is required",
+		// 	},
+		// },
 		availability: {
-			type: [String],
+			type: [
+				{
+					day: {
+						type: String,
+						required: true,
+						enum: [
+							"Monday",
+							"Tuesday",
+							"Wednesday",
+							"Thursday",
+							"Friday",
+							"Saturday",
+							"Sunday",
+						],
+					},
+					startTime: {
+						type: String,
+						required: true,
+						trim: true,
+					},
+					endTime: {
+						type: String,
+						required: true,
+						trim: true,
+					},
+					sessionLengthMinutes: {
+						type: Number,
+						required: true,
+						min: 15,
+					},
+				},
+			],
 			required: true,
 			validate: {
 				validator: function (value) {

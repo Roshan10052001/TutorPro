@@ -7,6 +7,22 @@ const privateRoutes = [
 		path: "dashboard",
 		element: lazy(() => import("../pages/AdminDashboard")),
 	},
+	{
+		path: "tutor-applications",
+		element: lazy(() => import("../pages/AdminTutorApplications")),
+	},
+	{
+		path: "tutor-accounts",
+		element: lazy(() => import("../pages/AdminTutorAccounts")),
+	},
+	{
+		path: "sessions",
+		element: lazy(() => import("../pages/Sessions")),
+	},
+	{
+		path: "profile",
+		element: lazy(() => import("../pages/Profile")),
+	},
 ];
 
 function Admin() {

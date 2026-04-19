@@ -193,6 +193,11 @@ button {
 	color: var(--success);
 }
 
+.status-badge.approved {
+	background: var(--success-soft);
+	color: var(--success);
+}
+
 .status-badge.pending {
 	background: rgba(59, 130, 246, 0.12);
 	color: var(--billiken-blue-dark);

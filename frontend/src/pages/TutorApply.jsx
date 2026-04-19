@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
-import Sidebar from "../components/Sidebar";
-import PageHeader from "../components/PageHeader";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import Layout from "../components/Layout";
 import DataTable from "../components/DataTable";
 import Modal from "../components/Modal";
 import { DAYS, HOURS, MINUTES, PERIODS, warnAlert } from "../utils";
@@ -14,7 +14,12 @@ import Swal from "sweetalert2";
 
 function TutorApply() {
 	const { user } = useContext(AuthContext);
-	const { data: tutorApplications = [] } = useGetTutorApplications();
+	const location = useLocation();
+	const navigate = useNavigate();
+	const {
+		data: tutorApplications = [],
+		isPending: isApplicationsLoading,
+	} = useGetTutorApplications();
 	const { mutateAsync, isPending, reset } = useSubmitTutorApplication();
 	const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -34,6 +39,10 @@ function TutorApply() {
 		hour: "",
 		minute: "00",
 		period: "AM",
+		endHour: "",
+		endMinute: "00",
+		endPeriod: "AM",
+		sessionLengthMinutes: "60",
 	});
 	const [availability, setAvailability] = useState([]);
 	const [editingIndex, setEditingIndex] = useState(null);
@@ -48,8 +57,22 @@ function TutorApply() {
 		setSlotForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 	};
 
-	const buildSlotLabel = () =>
-		`${slotForm.day} - ${slotForm.hour}:${slotForm.minute} ${slotForm.period}`;
+	const buildSlotLabel = () => ({
+		day: slotForm.day,
+		startTime: `${slotForm.hour}:${slotForm.minute} ${slotForm.period}`,
+		endTime: `${slotForm.endHour}:${slotForm.endMinute} ${slotForm.endPeriod}`,
+		sessionLengthMinutes: Number(slotForm.sessionLengthMinutes),
+	});
+
+	const convertToMinutes = (timeString) => {
+		const [time, modifier] = timeString.split(" ");
+		let [hours, minutes] = time.split(":").map(Number);
+
+		if (modifier === "PM" && hours !== 12) hours += 12;
+		if (modifier === "AM" && hours === 12) hours = 0;
+
+		return hours * 60 + minutes;
+	};
 
 	const resetSlotForm = () => {
 		setSlotForm({
@@ -57,6 +80,10 @@ function TutorApply() {
 			hour: "",
 			minute: "00",
 			period: "AM",
+			endHour: "",
+			endMinute: "00",
+			endPeriod: "AM",
+			sessionLengthMinutes: "60",
 		});
 		setEditingIndex(null);
 	};
@@ -66,16 +93,40 @@ function TutorApply() {
 			!slotForm.day ||
 			!slotForm.hour ||
 			!slotForm.minute ||
-			!slotForm.period
+			!slotForm.period ||
+			!slotForm.endHour ||
+			!slotForm.endMinute ||
+			!slotForm.endPeriod ||
+			!slotForm.sessionLengthMinutes
 		) {
-			warnAlert("Please select a day and time.");
+			warnAlert("Please complete the full availability range.");
 			return;
 		}
 
 		const slot = buildSlotLabel();
 
+		const startMinutes = convertToMinutes(slot.startTime);
+		const endMinutes = convertToMinutes(slot.endTime);
+
+		if (endMinutes <= startMinutes) {
+			warnAlert("End time must be later than start time.");
+			return;
+		}
+
+		if (endMinutes - startMinutes < slot.sessionLengthMinutes) {
+			warnAlert(
+				"Session length cannot be longer than the selected time range.",
+			);
+			return;
+		}
+
 		const duplicateExists = availability.some(
-			(existingSlot, index) => existingSlot === slot && index !== editingIndex,
+			(existingSlot, index) =>
+				existingSlot.day === slot.day &&
+				existingSlot.startTime === slot.startTime &&
+				existingSlot.endTime === slot.endTime &&
+				existingSlot.sessionLengthMinutes === slot.sessionLengthMinutes &&
+				index !== editingIndex,
 		);
 
 		if (duplicateExists) {
@@ -96,15 +147,20 @@ function TutorApply() {
 
 	const handleEditAvailability = (index) => {
 		const slot = availability[index];
-		const [day, timePart] = slot.split(" - ");
-		const [time, period] = timePart.split(" ");
-		const [hour, minute] = time.split(":");
+		const [startTime, startPeriod] = slot.startTime.split(" ");
+		const [startHour, startMinute] = startTime.split(":");
+		const [endTime, endPeriod] = slot.endTime.split(" ");
+		const [endHour, endMinute] = endTime.split(":");
 
 		setSlotForm({
-			day: day || "",
-			hour: hour || "",
-			minute: minute || "00",
-			period: period || "AM",
+			day: slot.day || "",
+			hour: startHour || "",
+			minute: startMinute || "00",
+			period: startPeriod || "AM",
+			endHour: endHour || "",
+			endMinute: endMinute || "00",
+			endPeriod: endPeriod || "AM",
+			sessionLengthMinutes: String(slot.sessionLengthMinutes || 60),
 		});
 		setEditingIndex(index);
 	};
@@ -163,7 +219,14 @@ function TutorApply() {
 	};
 
 	const isSlotIncomplete =
-		!slotForm.day || !slotForm.hour || !slotForm.minute || !slotForm.period;
+		!slotForm.day ||
+		!slotForm.hour ||
+		!slotForm.minute ||
+		!slotForm.period ||
+		!slotForm.endHour ||
+		!slotForm.endMinute ||
+		!slotForm.endPeriod ||
+		!slotForm.sessionLengthMinutes;
 
 	const resetApplicationForm = () => {
 		setFormData({
@@ -184,7 +247,20 @@ function TutorApply() {
 	const handleCloseModal = () => {
 		setIsModalOpen(false);
 		resetApplicationForm();
+		if (location.state) {
+			navigate(location.pathname, { replace: true, state: null });
+		}
 	};
+
+	useEffect(() => {
+		if (!location.state?.openNewApplication) return;
+
+		resetApplicationForm();
+		setIsModalOpen(true);
+	}, [location.state]);
+
+	const formatAvailabilitySlot = (slot) =>
+		`${slot.day}: ${slot.startTime} - ${slot.endTime} • ${slot.sessionLengthMinutes} min sessions`;
 
 	const columns = useMemo(
 		() => [
@@ -227,41 +303,37 @@ function TutorApply() {
 	);
 
 	return (
-		<div className='dashboard-layout'>
-			<Sidebar role={sidebarRole} />
-
-			<main className='dashboard-main'>
-				<PageHeader
-					title='Tutor Applications'
-					subtitle='Review your submitted tutor applications and create a new one when needed.'
-					buttonText='New Application'
-					onClick={handleOpenModal}
+		<Layout
+			page={sidebarRole}
+			title='Tutor Applications'
+			subtitle='Review your submitted tutor applications and create a new one when needed.'
+			buttonText='New Application'
+			onButtonClick={handleOpenModal}>
+			<section className='dashboard-panel enhanced-panel'>
+				<h2>My Applications</h2>
+				<DataTable
+					columns={columns}
+					data={tutorApplications}
+					isLoading={isApplicationsLoading}
+					emptyTitle='No tutor applications yet'
+					emptyText='Click "New Application" to submit your first tutor application.'
 				/>
+			</section>
 
-				<section className='dashboard-panel enhanced-panel'>
-					<h2>My Applications</h2>
-					<DataTable
-						columns={columns}
-						data={tutorApplications}
-						emptyTitle='No tutor applications yet'
-						emptyText='Click "New Application" to submit your first tutor application.'
-					/>
-				</section>
-
-				<Modal
-					isOpen={isModalOpen}
-					onClose={handleCloseModal}
-					title='Submit Tutor Application'
-					size='lg'>
-					<form
-						className='booking-form'
-						onSubmit={handleSubmit}>
+			<Modal
+				isOpen={isModalOpen}
+				onClose={handleCloseModal}
+				title='Submit Tutor Application'
+				size='lg'>
+				<form
+					className='booking-form'
+					onSubmit={handleSubmit}>
 						<label>Name</label>
 						<input
 							type='text'
 							name='name'
 							value={formData.name}
-							onChange={handleChange}
+							readOnly
 							required
 						/>
 
@@ -270,7 +342,7 @@ function TutorApply() {
 							type='email'
 							name='email'
 							value={formData.email}
-							onChange={handleChange}
+							readOnly
 							required
 						/>
 
@@ -284,15 +356,23 @@ function TutorApply() {
 							required
 						/>
 
-						<label>Availability Slots</label>
 						<div
 							style={{
 								display: "flex",
 								flexDirection: "column",
-								gap: "12px",
-								marginBottom: "12px",
+								gap: "16px",
+								marginBottom: "16px",
 							}}>
-							<div>
+							<div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+								<label>Availability Slots</label>
+								<p style={{ color: "#64748b", fontSize: "0.95rem" }}>
+									Choose the day, the time range you are available, and how
+									long each student session should be.
+								</p>
+							</div>
+
+							<div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+								<label>Day Available</label>
 								<select
 									name='day'
 									value={slotForm.day}
@@ -308,57 +388,141 @@ function TutorApply() {
 									))}
 								</select>
 							</div>
+
 							<div
 								style={{
 									display: "flex",
-									alignItems: "center",
+									flexDirection: "column",
 									gap: "8px",
-									marginBottom: "12px",
 								}}>
-								<select
-									name='hour'
-									value={slotForm.hour}
-									onChange={handleSlotChange}
-									required={!slotForm}>
-									<option value=''>Hour</option>
-									{HOURS.map((hour) => (
-										<option
-											key={hour}
-											value={hour}>
-											{hour}
-										</option>
-									))}
-								</select>
-								<select
-									name='minute'
-									value={slotForm.minute}
-									onChange={handleSlotChange}
-									required={!slotForm}>
-									{MINUTES.map((minute) => (
-										<option
-											key={minute}
-											value={minute}>
-											{minute}
-										</option>
-									))}
-								</select>
+								<label>Start Time</label>
+								<div
+									style={{
+										display: "flex",
+										alignItems: "center",
+										gap: "8px",
+										flexWrap: "wrap",
+									}}>
+									<select
+										name='hour'
+										value={slotForm.hour}
+										onChange={handleSlotChange}
+										required={!slotForm}>
+										<option value=''>Hour</option>
+										{HOURS.map((hour) => (
+											<option
+												key={hour}
+												value={hour}>
+												{hour}
+											</option>
+										))}
+									</select>
+									<select
+										name='minute'
+										value={slotForm.minute}
+										onChange={handleSlotChange}
+										required={!slotForm}>
+										{MINUTES.map((minute) => (
+											<option
+												key={minute}
+												value={minute}>
+												{minute}
+											</option>
+										))}
+									</select>
 
+									<select
+										name='period'
+										value={slotForm.period}
+										onChange={handleSlotChange}
+										required={!slotForm}>
+										{PERIODS.map((period) => (
+											<option
+												key={period}
+												value={period}>
+												{period}
+											</option>
+										))}
+									</select>
+								</div>
+							</div>
+
+							<div
+								style={{
+									display: "flex",
+									flexDirection: "column",
+									gap: "8px",
+								}}>
+								<label>End Time</label>
+								<div
+									style={{
+										display: "flex",
+										alignItems: "center",
+										gap: "8px",
+										flexWrap: "wrap",
+									}}>
+									<select
+										name='endHour'
+										value={slotForm.endHour}
+										onChange={handleSlotChange}>
+										<option value=''>Hour</option>
+										{HOURS.map((hour) => (
+											<option
+												key={hour}
+												value={hour}>
+												{hour}
+											</option>
+										))}
+									</select>
+
+									<select
+										name='endMinute'
+										value={slotForm.endMinute}
+										onChange={handleSlotChange}>
+										{MINUTES.map((minute) => (
+											<option
+												key={minute}
+												value={minute}>
+												{minute}
+											</option>
+										))}
+									</select>
+
+									<select
+										name='endPeriod'
+										value={slotForm.endPeriod}
+										onChange={handleSlotChange}>
+										{PERIODS.map((period) => (
+											<option
+												key={period}
+												value={period}>
+												{period}
+											</option>
+										))}
+									</select>
+								</div>
+							</div>
+
+							<div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+								<label>Session Length</label>
 								<select
-									name='period'
-									value={slotForm.period}
-									onChange={handleSlotChange}
-									required={!slotForm}>
-									{PERIODS.map((period) => (
-										<option
-											key={period}
-											value={period}>
-											{period}
-										</option>
-									))}
+									name='sessionLengthMinutes'
+									value={slotForm.sessionLengthMinutes}
+									onChange={handleSlotChange}>
+									<option value='30'>30 minutes</option>
+									<option value='45'>45 minutes</option>
+									<option value='60'>60 minutes</option>
+									<option value='90'>90 minutes</option>
+									<option value='120'>120 minutes</option>
 								</select>
 							</div>
 
-							<div style={{ display: "flex", gap: "8px", width: "50%" }}>
+							<div
+								style={{
+									display: "flex",
+									gap: "8px",
+									flexWrap: "wrap",
+								}}>
 								<button
 									type='button'
 									className='primary-btn'
@@ -368,19 +532,15 @@ function TutorApply() {
 										opacity: isSlotIncomplete ? 0.6 : 1,
 										cursor: isSlotIncomplete ? "not-allowed" : "pointer",
 									}}>
-									{editingIndex !== null ? "Save Slot" : "Add Slot"}
+									{editingIndex !== null
+										? "Save Slot"
+										: "Add Availability Slot"}
 								</button>
 								{editingIndex !== null && (
 									<button
 										type='button'
-										onClick={resetSlotForm}
-										style={{
-											backgroundColor: "#6b7280",
-											color: "#fff",
-											border: "none",
-											padding: "10px 14px",
-											cursor: "pointer",
-										}}>
+										className='secondary-btn'
+										onClick={resetSlotForm}>
 										Cancel Edit
 									</button>
 								)}
@@ -391,7 +551,7 @@ function TutorApply() {
 							<div style={{ marginBottom: "16px" }}>
 								{availability.map((slot, index) => (
 									<div
-										key={`${slot}-${index}`}
+										key={`${slot.day}-${slot.startTime}-${slot.endTime}-${index}`}
 										style={{
 											display: "flex",
 											justifyContent: "space-between",
@@ -401,8 +561,9 @@ function TutorApply() {
 											border: "1px solid #ddd",
 											borderRadius: "8px",
 											gap: "12px",
+											flexWrap: "wrap",
 										}}>
-										<span>{slot}</span>
+										<span>{formatAvailabilitySlot(slot)}</span>
 
 										<div style={{ display: "flex", gap: "8px" }}>
 											<button
@@ -448,16 +609,15 @@ function TutorApply() {
 							required
 						/>
 
-						<button
-							type='submit'
-							className='primary-btn'
-							disabled={isPending}>
-							{isPending ? "Submitting..." : "Submit Application"}
-						</button>
-					</form>
-				</Modal>
-			</main>
-		</div>
+					<button
+						type='submit'
+						className='primary-btn'
+						disabled={isPending}>
+						{isPending ? "Submitting..." : "Submit Application"}
+					</button>
+				</form>
+			</Modal>
+		</Layout>
 	);
 }
 

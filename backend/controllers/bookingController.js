@@ -115,7 +115,7 @@ exports.createBooking = asyncHandler(async (req, res, next) => {
 		student: req.user._id,
 		tutor,
 		course,
-		date,
+		date: bookingDate,
 		startTime,
 		endTime,
 		notes: notes || "",

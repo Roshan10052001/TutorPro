@@ -30,6 +30,18 @@ const deleteUserProfile = async () => {
 	return data;
 };
 
+const deleteUserByAdmin = async (userId) => {
+	const { data } = await axiosInstance({
+		url: `/users/${userId}`,
+		method: "DELETE",
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
+
+	return data;
+};
+
 export function useUpdateUserProfile() {
 	const { mutate, mutateAsync, isSuccess, isError, reset, error, isPending } =
 		useMutation({
@@ -71,6 +83,37 @@ export function useDeleteUserProfile() {
 			},
 			onError: (error) => {
 				errorAlert(error);
+			},
+		});
+
+	return { mutate, mutateAsync, isSuccess, isError, reset, error, isPending };
+}
+
+export function useDeleteUserAccount() {
+	const { mutate, mutateAsync, isSuccess, isError, reset, error, isPending } =
+		useMutation({
+			mutationFn: deleteUserByAdmin,
+			onSuccess: () => {
+				successAlert("Account deleted successfully");
+
+				queryClient.invalidateQueries({
+					queryKey: [queryKeys.user],
+				});
+				queryClient.invalidateQueries({
+					queryKey: [queryKeys.tutors],
+				});
+				queryClient.invalidateQueries({
+					queryKey: [queryKeys.tutorApplication],
+				});
+				queryClient.invalidateQueries({
+					queryKey: [queryKeys.allTutorApplications],
+				});
+				queryClient.invalidateQueries({
+					queryKey: [queryKeys.bookings],
+				});
+			},
+			onError: (mutationError) => {
+				errorAlert(mutationError);
 			},
 		});
 

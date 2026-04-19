@@ -1,4 +1,6 @@
 const User = require("../models/User");
+const TutorApplication = require("../models/TutorApplication");
+const Booking = require("../models/Booking");
 const asyncHandler = require("../utils/asyncHandler");
 const ErrorResponse = require("../utils/errorResponse");
 
@@ -70,5 +72,34 @@ exports.deleteProfile = asyncHandler(async (req, res, next) => {
 	res.status(200).json({
 		success: true,
 		message: "User profile deleted successfully",
+	});
+});
+
+//@desc Delete a user account (admin only)
+//@route DELETE /api/users/:id
+//@access Private/Admin
+exports.deleteUserByAdmin = asyncHandler(async (req, res, next) => {
+	const user = await User.findById(req.params.id);
+
+	if (!user) {
+		return next(new ErrorResponse("User not found", 404));
+	}
+
+	if (user._id.toString() === req.user._id.toString()) {
+		return next(new ErrorResponse("Admins cannot delete their own account", 400));
+	}
+
+	await Promise.all([
+		TutorApplication.deleteMany({ user: user._id }),
+		Booking.deleteMany({
+			$or: [{ student: user._id }, { tutor: user._id }],
+		}),
+	]);
+
+	await user.deleteOne();
+
+	res.status(200).json({
+		success: true,
+		message: "User account deleted successfully",
 	});
 });

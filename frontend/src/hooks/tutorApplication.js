@@ -60,6 +60,22 @@ const updateTutorApplication = async ({
 	return data?.data;
 };
 
+const updateMyTutorAvailability = async ({ applicationId, availability }) => {
+	const { data } = await axiosInstance({
+		url: "/tutor-application/availability",
+		method: "PUT",
+		data: {
+			applicationId,
+			availability,
+		},
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
+
+	return data?.data;
+};
+
 export const useGetAllTutorApplications = () => {
 	return useQuery({
 		queryKey: [queryKeys.allTutorApplications],
@@ -123,4 +139,25 @@ export function useUpdateTutorApplication() {
 		});
 
 	return { mutate, mutateAsync, isSuccess, isError, reset, error, isPending };
+}
+
+export function useUpdateMyTutorAvailability() {
+	const { mutate, mutateAsync, reset, isPending, isSuccess, isError, error } =
+		useMutation({
+			mutationFn: updateMyTutorAvailability,
+			onSuccess: () => {
+				successAlert("Availability updated successfully");
+				queryClient.invalidateQueries({
+					queryKey: [queryKeys.tutors],
+				});
+				queryClient.invalidateQueries({
+					queryKey: [queryKeys.tutorApplication],
+				});
+			},
+			onError: (mutationError) => {
+				errorAlert(mutationError);
+			},
+		});
+
+	return { mutate, mutateAsync, reset, isPending, isSuccess, isError, error };
 }

@@ -8,10 +8,10 @@ function Home() {
 	const { user, isAuthenticated } = useContext(AuthContext);
 	const dashboardPath =
 		user?.role === "admin"
-			? "/admin-dashboard"
+			? "/admin/dashboard"
 			: user?.role === "tutor"
-				? "/tutor-dashboard"
-				: "/student-dashboard";
+				? "/tutor/dashboard"
+				: "/student/dashboard";
 
 	return (
 		<div className='page-shell'>
@@ -43,7 +43,7 @@ function Home() {
 
 										{user?.role === "student" && (
 											<Link
-												to='/tutors'
+												to='/student/tutors'
 												className='secondary-btn'>
 												Browse Tutors
 											</Link>
@@ -51,15 +51,15 @@ function Home() {
 
 										{user?.role === "tutor" && (
 											<Link
-												to='/tutor-apply'
+												to='/tutor/tutor-apply'
 												className='secondary-btn'>
-												Apply as Tutor
+												My Applications
 											</Link>
 										)}
 
 										{user?.role === "admin" && (
 											<Link
-												to='/admin-dashboard'
+												to='/admin/tutor-applications'
 												className='secondary-btn'>
 												Review Requests
 											</Link>

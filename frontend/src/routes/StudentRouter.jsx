@@ -24,10 +24,6 @@ const privateRoutes = [
 		element: lazy(() => import("../pages/Sessions")),
 	},
 	{
-		path: "book-session",
-		element: lazy(() => import("../pages/BookSession")),
-	},
-	{
 		path: "profile",
 		element: lazy(() => import("../pages/Profile")),
 	},

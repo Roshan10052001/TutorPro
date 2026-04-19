@@ -74,6 +74,9 @@ export function useDeleteTutor() {
 				queryClient.invalidateQueries({
 					queryKey: [queryKeys.tutorApplication],
 				});
+				queryClient.invalidateQueries({
+					queryKey: [queryKeys.allTutorApplications],
+				});
 			},
 			onError: (error) => {
 				errorAlert(error);

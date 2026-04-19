@@ -1,9 +1,12 @@
+import Loader from "./Loader";
+
 function DataTable({
 	columns,
 	data,
 	rowKey = "_id",
 	emptyTitle = "No data found",
 	emptyText = "There is nothing to display yet.",
+	isLoading = false,
 }) {
 	const hasRows = Array.isArray(data) && data.length > 0;
 
@@ -23,7 +26,15 @@ function DataTable({
 						</tr>
 					</thead>
 					<tbody>
-						{hasRows ? (
+						{isLoading ? (
+							<tr>
+								<td
+									colSpan={columns.length}
+									className='data-table-empty'>
+									<Loader />
+								</td>
+							</tr>
+						) : hasRows ? (
 							data.map((row, index) => (
 								<tr key={row[rowKey] ?? `${rowKey}-${index}`}>
 									{columns.map((column) => (

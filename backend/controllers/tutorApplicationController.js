@@ -78,6 +78,42 @@ exports.getAllTutorApplications = asyncHandler(async (req, res, next) => {
 	});
 });
 
+// @desc    Update current tutor availability
+// @route   PUT /api/v1/tutor-applications/me/availability
+// @access  Private/Tutor
+exports.updateMyTutorAvailability = asyncHandler(async (req, res, next) => {
+	const { applicationId, availability } = req.body;
+
+	if (!applicationId) {
+		return next(new ErrorResponse("Tutor application id is required", 400));
+	}
+
+	if (!Array.isArray(availability) || availability.length === 0) {
+		return next(
+			new ErrorResponse("Please provide at least one availability slot", 400),
+		);
+	}
+
+	const application = await TutorApplication.findOne({
+		_id: applicationId,
+		user: req.user._id,
+		status: "approved",
+	});
+
+	if (!application) {
+		return next(new ErrorResponse("Approved tutor application not found", 404));
+	}
+
+	application.availability = availability;
+	await application.save();
+
+	res.status(200).json({
+		success: true,
+		message: "Tutor availability updated successfully",
+		data: application,
+	});
+});
+
 // @desc    Update tutor application status (admin only)
 // @route   PUT /api/v1/tutor-applications/:id
 // @access  Private/Admin

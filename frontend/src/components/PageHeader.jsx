@@ -1,18 +1,22 @@
-function PageHeader({ title, subtitle, buttonText, onClick }) {
-  return (
-    <div className="dashboard-header">
-      <div>
-        <h1>{title}</h1>
-        <p>{subtitle}</p>
-      </div>
+function PageHeader({ title, subtitle, buttonText, onClick, actions }) {
+	return (
+		<div className='dashboard-header'>
+			<div>
+				<h1>{title}</h1>
+				{subtitle ? <p>{subtitle}</p> : null}
+			</div>
 
-      {buttonText && (
-        <button className="primary-btn" onClick={onClick}>
-          {buttonText}
-        </button>
-      )}
-    </div>
-  )
+			{actions
+				? actions
+				: buttonText && (
+						<button
+							className='primary-btn'
+							onClick={onClick}>
+							{buttonText}
+						</button>
+					)}
+		</div>
+	);
 }
 
-export default PageHeader
+export default PageHeader;
