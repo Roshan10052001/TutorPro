@@ -57,12 +57,14 @@ const tutorRoutes = require("./routes/tutor");
 const bookingRoutes = require("./routes/booking");
 const tutorApplicationRoutes = require("./routes/tutorApplication");
 const userRoutes = require("./routes/user");
+const reviewRoutes = require("./routes/review");
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/tutors", tutorRoutes);
 app.use("/api/v1/bookings", bookingRoutes);
 app.use("/api/v1/tutor-application", tutorApplicationRoutes);
 app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/reviews", reviewRoutes);
 
 // Health check
 app.get("/", (req, res) => {
