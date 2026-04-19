@@ -1,56 +1,36 @@
-import { useEffect } from "react";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogFooter,
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
-function Modal({
-	isOpen,
-	title,
-	onClose,
-	children,
-	footer,
-	size = "md",
-}) {
-	useEffect(() => {
-		if (!isOpen) return undefined;
+const SIZE_CLASSES = {
+	md: "sm:max-w-2xl",
+	lg: "sm:max-w-4xl",
+};
 
-		function handleEscape(event) {
-			if (event.key === "Escape") {
-				onClose();
-			}
-		}
-
-		document.body.style.overflow = "hidden";
-		window.addEventListener("keydown", handleEscape);
-
-		return () => {
-			document.body.style.overflow = "";
-			window.removeEventListener("keydown", handleEscape);
-		};
-	}, [isOpen, onClose]);
-
-	if (!isOpen) return null;
-
+function Modal({ isOpen, title, onClose, children, footer, size = "md" }) {
 	return (
-		<div
-			className='modal-overlay'
-			onClick={onClose}>
-			<div
-				className={`modal-card modal-${size}`}
-				onClick={(event) => event.stopPropagation()}>
-				<div className='modal-header'>
-					<div>
-						<h2>{title}</h2>
-					</div>
-					<button
-						type='button'
-						className='modal-close-btn'
-						onClick={onClose}
-						aria-label='Close modal'>
-						×
-					</button>
-				</div>
-				<div className='modal-body'>{children}</div>
-				{footer ? <div className='modal-footer'>{footer}</div> : null}
-			</div>
-		</div>
+		<Dialog
+			open={isOpen}
+			onOpenChange={(open) => {
+				if (!open) onClose?.();
+			}}>
+			<DialogContent
+				className={cn(
+					"max-h-[calc(100vh-3rem)] overflow-y-auto",
+					SIZE_CLASSES[size] ?? SIZE_CLASSES.md
+				)}>
+				<DialogHeader>
+					<DialogTitle>{title}</DialogTitle>
+				</DialogHeader>
+				<div>{children}</div>
+				{footer ? <DialogFooter>{footer}</DialogFooter> : null}
+			</DialogContent>
+		</Dialog>
 	);
 }
 
