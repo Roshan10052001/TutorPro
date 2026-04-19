@@ -3,6 +3,10 @@ import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
 import EmptyState from "../components/EmptyState";
 import { useGetTutors } from "../hooks/tutor";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 function Tutors() {
 	const [search, setSearch] = useState("");
@@ -11,7 +15,6 @@ function Tutors() {
 
 	const formatAvailabilitySlot = (slot) => {
 		if (!slot || typeof slot !== "object") return String(slot || "-");
-
 		return `${slot.day}: ${slot.startTime} - ${slot.endTime} • ${slot.sessionLengthMinutes} min sessions`;
 	};
 
@@ -21,78 +24,89 @@ function Tutors() {
 		return approvedTutors.filter(
 			(tutor) =>
 				tutor.name.toLowerCase().includes(search.toLowerCase()) ||
-				tutor.course.toLowerCase().includes(search.toLowerCase()),
+				tutor.course.toLowerCase().includes(search.toLowerCase())
 		);
 	}, [approvedTutors, search]);
 
 	return (
 		<Layout
-			page='Student'
-			title='Find Tutors'
-			subtitle='Browse only admin-approved tutors and their available time slots.'>
-			<section className='dashboard-panel enhanced-panel'>
-				<input
-					type='text'
-					className='search-input'
-					placeholder='Search by tutor name or course'
-					value={search}
-					onChange={(e) => setSearch(e.target.value)}
-				/>
-			</section>
+			page="Student"
+			title="Find Tutors"
+			subtitle="Browse only admin-approved tutors and their available time slots.">
+			<Card className="mb-6">
+				<CardContent className="p-4">
+					<Input
+						type="text"
+						placeholder="Search by tutor name or course"
+						value={search}
+						onChange={(e) => setSearch(e.target.value)}
+					/>
+				</CardContent>
+			</Card>
 
 			{filteredTutors.length === 0 ? (
 				<EmptyState
-					title='No tutors found'
-					text='Try another search or wait for admin-approved tutors.'
+					title="No tutors found"
+					text="Try another search or wait for admin-approved tutors."
 				/>
 			) : (
-				<section className='card-grid'>
+				<section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
 					{filteredTutors.map((tutor) => (
-						<div
-							className='dashboard-panel tutor-card enhanced-panel'
-							key={tutor._id}>
-							<div className='tutor-card-header'>
-								<div>
-									<h3>{tutor.name}</h3>
-									<p className='course-line'>{tutor.course}</p>
+						<Card key={tutor._id} className="flex flex-col">
+							<CardContent className="flex flex-1 flex-col gap-3 p-6">
+								<div className="flex items-start justify-between gap-3">
+									<div>
+										<h3 className="text-lg font-bold text-slate-900">
+											{tutor.name}
+										</h3>
+										<p className="text-sm font-semibold text-blue-600">
+											{tutor.course}
+										</p>
+									</div>
+									<Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+										★ {tutor.rating}
+									</Badge>
 								</div>
-								<span className='soft-badge approved'>★ {tutor.rating}</span>
-							</div>
 
-							<p>{tutor.bio}</p>
+								<p className="text-sm text-slate-600">{tutor.bio}</p>
 
-							<div className='slot-section'>
-								<strong>Available Slots</strong>
-								{tutor.availability.length === 0 ? (
-									<p className='muted-text'>No slots open right now.</p>
-								) : (
-									<ul className='slot-list'>
-										{tutor.availability.map((slot, index) => (
-											<li
-												key={`${slot.day}-${slot.startTime}-${slot.endTime}-${index}`}>
-												{formatAvailabilitySlot(slot)}
-											</li>
-										))}
-									</ul>
-								)}
-							</div>
+								<div className="mt-2">
+									<strong className="text-sm font-semibold text-slate-900">
+										Available Slots
+									</strong>
+									{tutor.availability.length === 0 ? (
+										<p className="mt-1 text-sm text-slate-500">
+											No slots open right now.
+										</p>
+									) : (
+										<ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-600">
+											{tutor.availability.map((slot, index) => (
+												<li
+													key={`${slot.day}-${slot.startTime}-${slot.endTime}-${index}`}>
+													{formatAvailabilitySlot(slot)}
+												</li>
+											))}
+										</ul>
+									)}
+								</div>
 
-							<button
-								className='primary-btn'
-								onClick={() =>
-									navigate("/student/sessions", {
-										state: {
-											openBooking: true,
-											tutorId: tutor._id,
-										},
-									})
-								}
-								disabled={tutor.availability.length === 0}>
-								{tutor.availability.length === 0
-									? "No Slots Available"
-									: "Book Now"}
-							</button>
-						</div>
+								<Button
+									className="mt-auto"
+									onClick={() =>
+										navigate("/student/sessions", {
+											state: {
+												openBooking: true,
+												tutorId: tutor._id,
+											},
+										})
+									}
+									disabled={tutor.availability.length === 0}>
+									{tutor.availability.length === 0
+										? "No Slots Available"
+										: "Book Now"}
+								</Button>
+							</CardContent>
+						</Card>
 					))}
 				</section>
 			)}

@@ -1,5 +1,4 @@
 import AppRoutes from "./routes";
-import "./styles/pages.css";
 import { Toaster } from "@/components/ui/sonner";
 
 function App() {

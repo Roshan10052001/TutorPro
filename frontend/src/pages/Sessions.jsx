@@ -7,6 +7,17 @@ import { AuthContext } from "../context";
 import { useGetBookings } from "../hooks/booking";
 import BookingForm from "./BookSession/BookingForm";
 import { convertTimeToMinutes } from "../utils/functions";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+
+const STATUS_VARIANTS = {
+	booked: "bg-blue-100 text-blue-800",
+	confirmed: "bg-emerald-100 text-emerald-800",
+	approved: "bg-emerald-100 text-emerald-800",
+	pending: "bg-amber-100 text-amber-800",
+	open: "bg-sky-100 text-sky-800",
+	rejected: "bg-rose-100 text-rose-800",
+};
 
 function Sessions() {
 	const { user, role, activeView, effectiveRole } = useContext(AuthContext);
@@ -110,11 +121,16 @@ function Sessions() {
 			{
 				key: "status",
 				header: "Status",
-				render: (session) => (
-					<span className={`status-badge ${session.status || "pending"}`}>
-						{session.status || "pending"}
-					</span>
-				),
+				render: (session) => {
+					const s = session.status || "pending";
+					return (
+						<Badge
+							variant="secondary"
+							className={`font-semibold ${STATUS_VARIANTS[s] || ""}`}>
+							{s}
+						</Badge>
+					);
+				},
 			},
 			{
 				key: "notes",
@@ -164,9 +180,10 @@ function Sessions() {
 			subtitle={pageSubtitle}
 			buttonText={effectiveRole === "student" ? "Book New Session" : undefined}
 			onButtonClick={effectiveRole === "student" ? handleOpenModal : undefined}>
-			<section className='dashboard-panel enhanced-panel'>
-				<h2>Session List</h2>
-				<DataTable
+			<Card>
+				<CardContent className="p-6">
+					<h2 className="mb-4 text-lg font-bold text-slate-900">Session List</h2>
+					<DataTable
 					columns={columns}
 					data={sortedSessions}
 					isLoading={isSessionsLoading}
@@ -177,7 +194,8 @@ function Sessions() {
 							: "There are no sessions to show right now."
 					}
 				/>
-			</section>
+				</CardContent>
+			</Card>
 
 			<Modal
 				isOpen={isModalOpen}

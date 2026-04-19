@@ -5,6 +5,17 @@ import Modal from "../Modal";
 import { useUpdateTutorApplication } from "../../hooks/tutorApplication";
 import { useDeleteTutor } from "../../hooks/tutor";
 import { useDeleteUserAccount } from "../../hooks/user";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+
+const STATUS_VARIANTS = {
+	pending: "bg-amber-100 text-amber-800",
+	approved: "bg-emerald-100 text-emerald-800",
+	rejected: "bg-rose-100 text-rose-800",
+};
 
 function TutorApplicationManagementTable({
 	applications = [],
@@ -27,24 +38,15 @@ function TutorApplicationManagementTable({
 
 	const isActionPending = isPending || isDeletingTutor || isDeletingUser;
 
-	const handleOpenRequest = (application) => {
-		setSelectedApplication(application);
-	};
-
-	const handleCloseRequest = () => {
-		setSelectedApplication(null);
-	};
+	const handleOpenRequest = (application) => setSelectedApplication(application);
+	const handleCloseRequest = () => setSelectedApplication(null);
 
 	const handleNotesChange = (applicationId, value) => {
-		setAdminNotesById((prev) => ({
-			...prev,
-			[applicationId]: value,
-		}));
+		setAdminNotesById((prev) => ({ ...prev, [applicationId]: value }));
 	};
 
 	const formatAvailabilitySlot = (slot) => {
 		if (!slot || typeof slot !== "object") return String(slot || "-");
-
 		return `${slot.day}: ${slot.startTime} - ${slot.endTime} • ${slot.sessionLengthMinutes} min sessions`;
 	};
 
@@ -109,7 +111,6 @@ function TutorApplicationManagementTable({
 
 	const handleDeleteAccount = async (application) => {
 		const userId = application?.user?._id;
-
 		if (!userId) return;
 
 		const result = await Swal.fire({
@@ -140,14 +141,8 @@ function TutorApplicationManagementTable({
 			key: "name",
 			header: viewMode === "approved" ? "Tutor" : "Applicant",
 		},
-		{
-			key: "email",
-			header: "Email",
-		},
-		{
-			key: "course",
-			header: "Course",
-		},
+		{ key: "email", header: "Email" },
+		{ key: "course", header: "Course" },
 		{
 			key: "createdAt",
 			header: "Submitted",
@@ -167,103 +162,111 @@ function TutorApplicationManagementTable({
 		{
 			key: "status",
 			header: "Status",
-			render: (application) => (
-				<span className={`status-badge ${application.status || "pending"}`}>
-					{application.status || "pending"}
-				</span>
-			),
+			render: (application) => {
+				const status = application.status || "pending";
+				return (
+					<Badge className={STATUS_VARIANTS[status] || STATUS_VARIANTS.pending}>
+						{status}
+					</Badge>
+				);
+			},
 		},
 		{
 			key: "actions",
 			header: "Action",
 			render: (application) => (
-				<button
-					type='button'
-					className='primary-btn'
+				<Button
+					type="button"
+					size="sm"
 					onClick={() => handleOpenRequest(application)}>
 					{viewMode === "approved" ? "Manage" : "View"}
-				</button>
+				</Button>
 			),
 		},
 	];
 
 	return (
 		<>
-			<section className='dashboard-panel'>
-				{heading ? <h2>{heading}</h2> : null}
-				<DataTable
-					columns={columns}
-					data={applications}
-					isLoading={isLoading}
-					emptyTitle={emptyTitle}
-					emptyText={emptyText}
-				/>
-			</section>
+			<Card className="mb-6">
+				<CardContent className="p-6">
+					{heading ? (
+						<h2 className="mb-4 text-lg font-bold text-slate-900">{heading}</h2>
+					) : null}
+					<DataTable
+						columns={columns}
+						data={applications}
+						isLoading={isLoading}
+						emptyTitle={emptyTitle}
+						emptyText={emptyText}
+					/>
+				</CardContent>
+			</Card>
 
 			<Modal
 				isOpen={Boolean(selectedApplication)}
 				onClose={handleCloseRequest}
-				title='Tutor Application Request'
-				size='lg'>
+				title="Tutor Application Request"
+				size="lg">
 				{selectedApplication ? (
-					<div className='booking-form'>
-						<label>Name</label>
-						<input
-							type='text'
-							value={selectedApplication.name}
-							readOnly
-						/>
+					<div className="flex flex-col gap-4">
+						<div className="flex flex-col gap-1.5">
+							<Label>Name</Label>
+							<Input type="text" value={selectedApplication.name} readOnly />
+						</div>
 
-						<label>Email</label>
-						<input
-							type='email'
-							value={selectedApplication.email}
-							readOnly
-						/>
+						<div className="flex flex-col gap-1.5">
+							<Label>Email</Label>
+							<Input type="email" value={selectedApplication.email} readOnly />
+						</div>
 
-						<label>Course</label>
-						<input
-							type='text'
-							value={selectedApplication.course}
-							readOnly
-						/>
+						<div className="flex flex-col gap-1.5">
+							<Label>Course</Label>
+							<Input type="text" value={selectedApplication.course} readOnly />
+						</div>
 
-						<label>Bio</label>
-						<textarea
-							value={selectedApplication.bio}
-							rows='4'
-							readOnly
-						/>
+						<div className="flex flex-col gap-1.5">
+							<Label>Bio</Label>
+							<textarea
+								className="flex min-h-[96px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+								value={selectedApplication.bio}
+								rows="4"
+								readOnly
+							/>
+						</div>
 
-						<label>Availability</label>
-						<ul className='slot-list'>
-							{selectedApplication.availability.map((slot, index) => (
-								<li key={`${slot.day}-${slot.startTime}-${slot.endTime}-${index}`}>
-									{formatAvailabilitySlot(slot)}
-								</li>
-							))}
-						</ul>
+						<div className="flex flex-col gap-1.5">
+							<Label>Availability</Label>
+							<ul className="flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+								{selectedApplication.availability.map((slot, index) => (
+									<li key={`${slot.day}-${slot.startTime}-${slot.endTime}-${index}`}>
+										{formatAvailabilitySlot(slot)}
+									</li>
+								))}
+							</ul>
+						</div>
 
-						<label>Comments</label>
-						<textarea
-							value={
-								adminNotesById[selectedApplication._id] ??
-								selectedApplication.adminNotes ??
-								""
-							}
-							onChange={(event) =>
-								handleNotesChange(selectedApplication._id, event.target.value)
-							}
-							placeholder='Add comments for this application'
-							rows='3'
-						/>
+						<div className="flex flex-col gap-1.5">
+							<Label>Comments</Label>
+							<textarea
+								className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+								value={
+									adminNotesById[selectedApplication._id] ??
+									selectedApplication.adminNotes ??
+									""
+								}
+								onChange={(event) =>
+									handleNotesChange(selectedApplication._id, event.target.value)
+								}
+								placeholder="Add comments for this application"
+								rows="3"
+							/>
+						</div>
 
-						<div className='action-grid'>
+						<div className="flex flex-wrap gap-2 pt-2">
 							{selectedApplication.status === "pending" ||
 							selectedApplication.status === "rejected" ? (
-								<button
-									type='button'
-									className='primary-btn'
+								<Button
+									type="button"
 									onClick={() => handleSubmit(selectedApplication, "approved")}
 									disabled={isActionPending}>
 									{isPending &&
@@ -271,16 +274,13 @@ function TutorApplicationManagementTable({
 									activeApplicationId === selectedApplication._id
 										? "Approving..."
 										: "Approve"}
-								</button>
+								</Button>
 							) : null}
 							{selectedApplication.status === "pending" ? (
-								<button
-									type='button'
-									className='secondary-btn'
-									style={{
-										color: "red",
-										border: "1px solid red",
-									}}
+								<Button
+									type="button"
+									variant="outline"
+									className="border-rose-400 text-rose-700 hover:bg-rose-50"
 									onClick={() => handleSubmit(selectedApplication, "rejected")}
 									disabled={isActionPending}>
 									{isPending &&
@@ -288,12 +288,12 @@ function TutorApplicationManagementTable({
 									activeApplicationId === selectedApplication._id
 										? "Rejecting..."
 										: "Reject"}
-								</button>
+								</Button>
 							) : null}
 							{selectedApplication.status === "approved" ? (
-								<button
-									type='button'
-									className='secondary-btn'
+								<Button
+									type="button"
+									variant="outline"
 									onClick={() => handleReverseTutor(selectedApplication)}
 									disabled={isActionPending}>
 									{isDeletingTutor &&
@@ -301,15 +301,11 @@ function TutorApplicationManagementTable({
 									activeApplicationId === selectedApplication._id
 										? "Reversing..."
 										: "Change Back to Student"}
-								</button>
+								</Button>
 							) : null}
-							<button
-								type='button'
-								className='secondary-btn'
-								style={{
-									color: "#b91c1c",
-									border: "1px solid #b91c1c",
-								}}
+							<Button
+								type="button"
+								variant="destructive"
 								onClick={() => handleDeleteAccount(selectedApplication)}
 								disabled={isActionPending}>
 								{isDeletingUser &&
@@ -317,7 +313,7 @@ function TutorApplicationManagementTable({
 								activeApplicationId === selectedApplication._id
 									? "Deleting Account..."
 									: "Delete Account"}
-							</button>
+							</Button>
 						</div>
 					</div>
 				) : null}
