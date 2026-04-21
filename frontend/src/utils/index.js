@@ -1,4 +1,4 @@
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { getStoredUser } from "../storage";
 
 export const safeRead = (key, fallback) => {
@@ -84,23 +84,11 @@ export const isAuthenticated = () => {
 	}
 };
 
-export const toastOptions = {
-	position: "top-right",
-	// autoClose: 8000,
-	draggable: true,
-	//   theme: "dark",
-	// timeOut: 8000,
-	pauseOnHover: true,
-	style: {
-		zIndex: 9999,
-	},
-};
-
 export const successAlert = (msg) => {
-	toast.success(msg || "Successfully created", toastOptions);
+	toast.success(msg || "Successfully created");
 };
 export const warnAlert = (msg) => {
-	toast.warn(msg || "Warning", toastOptions);
+	toast.warning(msg || "Warning");
 };
 export const errorAlert = (error) => {
 	const defaultErrorMessage = "An error occurred. Please try again later.";
@@ -109,7 +97,5 @@ export const errorAlert = (error) => {
 		error?.response?.data?.error ||
 		defaultErrorMessage;
 
-	console.log(errorMessage);
-
-	toast.error(errorMessage, toastOptions);
+	toast.error(errorMessage);
 };

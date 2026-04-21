@@ -1,13 +1,11 @@
 import AppRoutes from "./routes";
-import "./styles/pages.css";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { Toaster } from "@/components/ui/sonner";
 
 function App() {
 	return (
 		<>
 			<AppRoutes />
-			<ToastContainer />
+			<Toaster position="top-right" richColors closeButton />
 		</>
 	);
 }
