@@ -11,6 +11,7 @@ import {
 } from "../hooks/booking";
 import BookingForm from "./BookSession/BookingForm";
 import { convertTimeToMinutes } from "../utils/functions";
+import Swal from "sweetalert2";
 
 function Sessions() {
 	const { user, role, activeView, effectiveRole } = useContext(AuthContext);
@@ -88,6 +89,32 @@ function Sessions() {
 
 	const handleCancelBooking = (bookingId) => {
 		cancelBookingMutation.mutate(bookingId);
+	};
+
+	const handleSessionAction = async (bookingId, action) => {
+		const actionLabels = {
+			confirmed: "confirm this booking",
+			completed: "mark this booking as completed",
+			cancelled: "cancel this booking",
+		};
+
+		const result = await Swal.fire({
+			title: "Confirmation",
+			text: `Are you sure you want to ${actionLabels[action]}?`,
+			icon: "question",
+			showCancelButton: true,
+			confirmButtonText: "Yes",
+			cancelButtonText: "Cancel",
+			reverseButtons: true,
+		});
+
+		if (!result.isConfirmed) return;
+
+		if (action === "cancelled") {
+			handleCancelBooking(bookingId);
+		} else {
+			handleStatusUpdate(bookingId, action);
+		}
 	};
 
 	const getStatusMeta = (status) => {
@@ -230,17 +257,12 @@ function Sessions() {
 											minWidth: "180px",
 											cursor: isBusy ? "not-allowed" : "pointer",
 										}}
-										onChange={(event) => {
+										onChange={async (event) => {
 											const selectedValue = event.target.value;
 
 											if (!selectedValue) return;
 
-											if (selectedValue === "cancelled") {
-												handleCancelBooking(session._id);
-											} else {
-												handleStatusUpdate(session._id, selectedValue);
-											}
-
+											await handleSessionAction(session._id, selectedValue);
 											event.target.value = "";
 										}}>
 										<option value="">
