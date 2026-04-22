@@ -2,7 +2,11 @@ const TutorApplication = require("../models/TutorApplication");
 const User = require("../models/User");
 const asyncHandler = require("../utils/asyncHandler");
 const ErrorResponse = require("../utils/errorResponse");
-const { scoreApplication } = require("../services/aiScoringService");
+const {
+	scoreApplication,
+	generateNoteSuggestions,
+	polishNote,
+} = require("../services/aiScoringService");
 
 function scoreInBackground(applicationId) {
 	TutorApplication.findById(applicationId)
@@ -87,6 +91,40 @@ exports.rescoreTutorApplication = asyncHandler(async (req, res, next) => {
 		message: "Tutor application re-scored",
 		data: application,
 	});
+});
+
+// @desc    Generate AI-assisted admin notes (suggest or polish)
+// @route   POST /api/v1/tutor-applications/:id/admin-notes
+// @access  Private/Admin
+exports.generateAdminNotes = asyncHandler(async (req, res, next) => {
+	const { mode, draft } = req.body;
+
+	if (!["suggest", "polish"].includes(mode)) {
+		return next(new ErrorResponse("mode must be 'suggest' or 'polish'", 400));
+	}
+
+	const application = await TutorApplication.findById(req.params.id);
+	if (!application) {
+		return next(new ErrorResponse("Tutor application not found", 404));
+	}
+
+	if (mode === "suggest") {
+		const result = await generateNoteSuggestions(application);
+		if (result.error) {
+			return next(new ErrorResponse(result.error, 502));
+		}
+		return res.status(200).json({ success: true, data: result });
+	}
+
+	if (typeof draft !== "string" || !draft.trim()) {
+		return next(new ErrorResponse("draft is required for polish mode", 400));
+	}
+
+	const result = await polishNote(application, draft.trim());
+	if (result.error) {
+		return next(new ErrorResponse(result.error, 502));
+	}
+	return res.status(200).json({ success: true, data: result });
 });
 
 // @desc    Get tutor applications for current user

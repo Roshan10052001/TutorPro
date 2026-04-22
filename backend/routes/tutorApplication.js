@@ -9,6 +9,7 @@ const {
 	updateMyTutorAvailability,
 	updateTutorApplicationStatus,
 	rescoreTutorApplication,
+	generateAdminNotes,
 } = require("../controllers/tutorApplicationController");
 
 router.post("/", protect, submitTutorApplication);
@@ -22,5 +23,6 @@ router.put(
 );
 router.put("/:id", protect, authorize("admin"), updateTutorApplicationStatus);
 router.post("/:id/score", protect, authorize("admin"), rescoreTutorApplication);
+router.post("/:id/admin-notes", protect, authorize("admin"), generateAdminNotes);
 
 module.exports = router;
