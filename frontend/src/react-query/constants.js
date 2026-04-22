@@ -7,5 +7,7 @@ export const queryKeys = {
 	allTutorApplications: "allTutorApplications",
 	bookings: "bookings",
 	booking: "booking",
+	reviews: "reviews",
+	myReviews: "myReviews",
 	notifications: "notifications",
 };

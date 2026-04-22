@@ -112,7 +112,18 @@ npm run dev
 npm start
 ```
 
-### 4. API Documentation (Swagger)
+### 4. Running Backend Tests
+
+Backend tests use Jest + supertest against an in-memory MongoDB (no real DB required).
+
+```bash
+cd backend
+npm test
+```
+
+On first run, `mongodb-memory-server` downloads a small Mongo binary (cached afterward). Tests live under `backend/tests/` and run via `npm test`, which sets `NODE_ENV=test` so rate-limiting and request logging are skipped.
+
+### 5. API Documentation (Swagger)
 
 Once the backend is running, open your browser and navigate to:
 
@@ -125,12 +136,19 @@ This serves an interactive Swagger UI where you can:
 - View request/response schemas with examples
 - Click the **Authorize** button and enter your JWT token to test protected endpoints directly from the browser
 
-### 3. Frontend Setup
+### 6. Frontend Setup
 
 ```bash
 cd frontend
 npm install
 npm run dev
+```
+
+Frontend tests use Vitest:
+
+```bash
+cd frontend
+npm test
 ```
 
 ## 🔐 API Endpoints
