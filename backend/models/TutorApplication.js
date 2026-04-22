@@ -89,6 +89,24 @@ const tutorApplicationSchema = new mongoose.Schema(
 			type: String,
 			default: "",
 		},
+		aiScore: {
+			recommendation: {
+				type: String,
+				enum: ["approve", "reject", "needs_review"],
+			},
+			confidence: {
+				type: Number,
+				min: 0,
+				max: 1,
+			},
+			reasons: {
+				type: [String],
+				default: undefined,
+			},
+			scoredAt: Date,
+			model: String,
+			error: String,
+		},
 	},
 	{
 		timestamps: true,
