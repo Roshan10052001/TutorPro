@@ -15,7 +15,7 @@ function TutorDetail() {
 	const {
 		data: reviewData = { reviews: [], count: 0, averageRating: 0 },
 		isPending: isReviewsLoading,
-	} = useGetTutorReviews(tutorId);
+	} = useGetTutorReviews(tutor?.userId);
 
 	const formatAvailabilitySlot = (slot) => {
 		if (!slot || typeof slot !== "object") return String(slot || "-");
