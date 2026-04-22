@@ -9,4 +9,5 @@ export const queryKeys = {
 	booking: "booking",
 	reviews: "reviews",
 	myReviews: "myReviews",
+	notifications: "notifications",
 };

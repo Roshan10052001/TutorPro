@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import NotificationBell from "./NotificationBell";
 
 function PageHeader({ title, subtitle, buttonText, onClick, actions }) {
 	return (
@@ -12,9 +13,12 @@ function PageHeader({ title, subtitle, buttonText, onClick, actions }) {
 				) : null}
 			</div>
 
-			{actions
-				? actions
-				: buttonText && <Button onClick={onClick}>{buttonText}</Button>}
+			<div className="flex items-center gap-3">
+				<NotificationBell />
+				{actions
+					? actions
+					: buttonText && <Button onClick={onClick}>{buttonText}</Button>}
+			</div>
 		</div>
 	);
 }
