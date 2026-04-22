@@ -1,5 +1,6 @@
 const Booking = require("../models/Booking");
 const User = require("../models/User");
+const Notification = require("../models/Notification");
 const asyncHandler = require("../utils/asyncHandler");
 const ErrorResponse = require("../utils/errorResponse");
 
@@ -120,6 +121,18 @@ exports.createBooking = asyncHandler(async (req, res, next) => {
 		endTime,
 		notes: notes || "",
 	});
+
+	try {
+		await Notification.create({
+			user: tutor,
+			type: "booking_created",
+			title: "New booking request",
+			message: `${req.user.name} booked ${course} on ${startTime}–${endTime}.`,
+			relatedBooking: booking._id,
+		});
+	} catch (err) {
+		console.error("Failed to create notification:", err);
+	}
 
 	res.status(201).json({
 		success: true,
