@@ -52,7 +52,7 @@ function TutorDashboard() {
 
 	const formatAvailabilitySlot = (slot) => {
 		if (!slot || typeof slot !== "object") return String(slot || "-");
-		return `${slot.day}: ${slot.startTime} - ${slot.endTime} • ${slot.sessionLengthMinutes} min sessions`;
+		return `${slot.day}: ${slot.startTime} - ${slot.endTime} - ${slot.sessionLengthMinutes} min sessions`;
 	};
 
 	const getWindowSlotCount = (slot) => {
@@ -89,9 +89,7 @@ function TutorDashboard() {
 	};
 
 	const totalOpenAvailabilitySlots = myTutorProfiles.reduce((count, profile) => {
-		const labels = new Set(
-			(profile.bookedSlots || []).map((slot) => slot.label)
-		);
+		const labels = new Set((profile.bookedSlots || []).map((slot) => slot.label));
 		const profileOpenSlots = (profile.availability || []).reduce(
 			(slotCount, slot) => {
 				const startMinutes = convertTimeToMinutes(slot.startTime);
@@ -130,7 +128,7 @@ function TutorDashboard() {
 			day: "numeric",
 			year: "numeric",
 		});
-		return `${readableDate} • ${session.startTime} - ${session.endTime}`;
+		return `${readableDate} - ${session.startTime} - ${session.endTime}`;
 	};
 
 	const resetSlotForm = () => {
@@ -266,9 +264,7 @@ function TutorDashboard() {
 	};
 
 	const handleRemoveAvailability = (indexToRemove) => {
-		setAvailability((prev) =>
-			prev.filter((_, index) => index !== indexToRemove)
-		);
+		setAvailability((prev) => prev.filter((_, index) => index !== indexToRemove));
 		if (editingIndex === indexToRemove) resetSlotForm();
 	};
 
@@ -317,20 +313,25 @@ function TutorDashboard() {
 						myTutorProfiles.length > 0 ? "Approved" : "Pending / Not Approved"
 					}
 					subtitle="Admin controlled"
+					tone="emerald"
+					icon="trust"
 				/>
 				<StatCard
 					title="My Sessions"
 					value={mySessions.length}
 					subtitle="Booked by students"
+					icon="schedule"
 				/>
 				<StatCard
 					title="Open Session Slots"
 					value={totalOpenAvailabilitySlots}
 					subtitle="Currently bookable"
+					tone="blue"
+					icon="academics"
 				/>
 			</section>
 
-			<Card className="mb-6">
+			<Card className="mb-6 border-white/70 bg-white/80 shadow-lg shadow-slate-200/60 backdrop-blur">
 				<CardContent className="p-6">
 					<h2 className="mb-4 text-lg font-bold text-slate-900">
 						My Tutor Status
@@ -399,7 +400,7 @@ function TutorDashboard() {
 											<ul className="mt-2 list-disc space-y-1 pl-6 text-sm text-slate-600">
 												{profile.availability.map((slot, index) => (
 													<li key={`${profile._id}-${index}`}>
-														{formatAvailabilitySlot(slot)} •{" "}
+														{formatAvailabilitySlot(slot)} -{" "}
 														{getWindowSlotCount(slot)} bookable session
 														{getWindowSlotCount(slot) === 1 ? "" : "s"}
 													</li>
@@ -455,7 +456,7 @@ function TutorDashboard() {
 				</CardContent>
 			</Card>
 
-			<Card className="mb-6">
+			<Card className="mb-6 border-white/70 bg-white/80 shadow-lg shadow-slate-200/60 backdrop-blur">
 				<CardContent className="p-6">
 					<h2 className="mb-4 text-lg font-bold text-slate-900">
 						My Next 5 Bookings
