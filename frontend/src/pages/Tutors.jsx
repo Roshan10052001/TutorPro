@@ -63,9 +63,13 @@ function Tutors() {
 											{tutor.course}
 										</p>
 									</div>
-									<Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
-										★ {tutor.rating}
-									</Badge>
+									{tutor.reviewCount > 0 ? (
+										<Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+											★ {Number(tutor.rating).toFixed(1)} ({tutor.reviewCount})
+										</Badge>
+									) : (
+										<span className="text-xs text-slate-500">No reviews yet</span>
+									)}
 								</div>
 
 								<p className="text-sm text-slate-600">{tutor.bio}</p>

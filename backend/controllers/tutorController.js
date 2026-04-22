@@ -1,5 +1,7 @@
+const mongoose = require("mongoose");
 const TutorApplication = require("../models/TutorApplication");
 const Booking = require("../models/Booking");
+const Review = require("../models/Review");
 const User = require("../models/User");
 const asyncHandler = require("../utils/asyncHandler");
 const ErrorResponse = require("../utils/errorResponse");
@@ -118,8 +120,35 @@ async function getBookingsByTutor(applications) {
 	}, new Map());
 }
 
-function formatTutorData(app, bookingsByTutor) {
+async function getReviewsByTutorUser(applications) {
+	const tutorUserIds = applications
+		.map((application) => application.user?.toString())
+		.filter(Boolean);
+
+	if (tutorUserIds.length === 0) {
+		return new Map();
+	}
+
+	const aggregates = await Review.aggregate([
+		{ $match: { tutor: { $in: tutorUserIds.map((id) => new mongoose.Types.ObjectId(id)) } } },
+		{
+			$group: {
+				_id: "$tutor",
+				avg: { $avg: "$rating" },
+				count: { $sum: 1 },
+			},
+		},
+	]);
+
+	return aggregates.reduce((map, row) => {
+		map.set(row._id.toString(), { avg: row.avg, count: row.count });
+		return map;
+	}, new Map());
+}
+
+function formatTutorData(app, bookingsByTutor, reviewsByTutorUser) {
 	const tutorUserId = app.user?.toString?.() || app.user;
+	const reviewStats = reviewsByTutorUser?.get(tutorUserId);
 
 	return {
 		_id: app._id,
@@ -133,7 +162,8 @@ function formatTutorData(app, bookingsByTutor) {
 		// The frontend compares generated slots against these booked ones.
 		bookedSlots: bookingsByTutor.get(app._id.toString()) || [],
 		status: app.status,
-		rating: 5,
+		rating: reviewStats?.avg ?? 0,
+		reviewCount: reviewStats?.count ?? 0,
 	};
 }
 
@@ -169,10 +199,15 @@ exports.getTutors = asyncHandler(async (req, res, next) => {
 		TutorApplication.countDocuments(query),
 	]);
 
-	const bookingsByTutor = await getBookingsByTutor(applications);
+	const [bookingsByTutor, reviewsByTutorUser] = await Promise.all([
+		getBookingsByTutor(applications),
+		getReviewsByTutorUser(applications),
+	]);
 
 	// Format data for frontend
-	const tutors = applications.map((app) => formatTutorData(app, bookingsByTutor));
+	const tutors = applications.map((app) =>
+		formatTutorData(app, bookingsByTutor, reviewsByTutorUser),
+	);
 
 	res.status(200).json({
 		success: true,
@@ -194,11 +229,14 @@ exports.getTutorById = asyncHandler(async (req, res, next) => {
 		return next(new ErrorResponse("Tutor not found", 404));
 	}
 
-	const bookingsByTutor = await getBookingsByTutor([tutor]);
+	const [bookingsByTutor, reviewsByTutorUser] = await Promise.all([
+		getBookingsByTutor([tutor]),
+		getReviewsByTutorUser([tutor]),
+	]);
 
 	res.status(200).json({
 		success: true,
-		data: formatTutorData(tutor, bookingsByTutor),
+		data: formatTutorData(tutor, bookingsByTutor, reviewsByTutorUser),
 	});
 });
 
