@@ -10,7 +10,21 @@ import {
 	useGetTutorApplications,
 	useSubmitTutorApplication,
 } from "../hooks/tutorApplication";
-import Swal from "sweetalert2";
+import { useConfirm } from "../components/ConfirmProvider";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+
+const STATUS_VARIANTS = {
+	pending: "bg-amber-100 text-amber-800",
+	approved: "bg-emerald-100 text-emerald-800",
+	rejected: "bg-rose-100 text-rose-800",
+};
+
+const selectClass =
+	"flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20";
 
 function TutorApply() {
 	const { user } = useContext(AuthContext);
@@ -21,6 +35,7 @@ function TutorApply() {
 		isPending: isApplicationsLoading,
 	} = useGetTutorApplications();
 	const { mutateAsync, isPending, reset } = useSubmitTutorApplication();
+	const confirm = useConfirm();
 	const [isModalOpen, setIsModalOpen] = useState(false);
 
 	const initialFormData = useMemo(
@@ -67,10 +82,8 @@ function TutorApply() {
 	const convertToMinutes = (timeString) => {
 		const [time, modifier] = timeString.split(" ");
 		let [hours, minutes] = time.split(":").map(Number);
-
 		if (modifier === "PM" && hours !== 12) hours += 12;
 		if (modifier === "AM" && hours === 12) hours = 0;
-
 		return hours * 60 + minutes;
 	};
 
@@ -104,7 +117,6 @@ function TutorApply() {
 		}
 
 		const slot = buildSlotLabel();
-
 		const startMinutes = convertToMinutes(slot.startTime);
 		const endMinutes = convertToMinutes(slot.endTime);
 
@@ -166,9 +178,7 @@ function TutorApply() {
 	};
 
 	const handleRemoveAvailability = (indexToRemove) => {
-		setAvailability((prev) =>
-			prev.filter((_, index) => index !== indexToRemove),
-		);
+		setAvailability((prev) => prev.filter((_, index) => index !== indexToRemove));
 		if (editingIndex === indexToRemove) {
 			resetSlotForm();
 		}
@@ -182,17 +192,11 @@ function TutorApply() {
 			return;
 		}
 
-		const result = await Swal.fire({
+		const ok = await confirm({
 			title: "Confirmation",
-			text: "Are you sure you want to submit this application?",
-			icon: "question",
-			showCancelButton: true,
-			confirmButtonText: "Yes",
-			cancelButtonText: "Cancel",
-			reverseButtons: true,
+			description: "Are you sure you want to submit this application?",
 		});
-
-		if (!result.isConfirmed) return;
+		if (!ok) return;
 
 		try {
 			await mutateAsync({
@@ -213,7 +217,6 @@ function TutorApply() {
 			reset();
 			setIsModalOpen(false);
 		} catch {
-			//error handled in hook, just reset pending state here
 			reset();
 		}
 	};
@@ -254,7 +257,6 @@ function TutorApply() {
 
 	useEffect(() => {
 		if (!location.state?.openNewApplication) return;
-
 		resetApplicationForm();
 		setIsModalOpen(true);
 	}, [location.state]);
@@ -264,18 +266,18 @@ function TutorApply() {
 
 	const columns = useMemo(
 		() => [
-			{
-				key: "course",
-				header: "Course",
-			},
+			{ key: "course", header: "Course" },
 			{
 				key: "status",
 				header: "Status",
-				render: (application) => (
-					<span className={`status-badge ${application.status || "pending"}`}>
-						{application.status || "pending"}
-					</span>
-				),
+				render: (application) => {
+					const status = application.status || "pending";
+					return (
+						<Badge className={STATUS_VARIANTS[status] || STATUS_VARIANTS.pending}>
+							{status}
+						</Badge>
+					);
+				},
 			},
 			{
 				key: "availability",
@@ -305,316 +307,233 @@ function TutorApply() {
 	return (
 		<Layout
 			page={sidebarRole}
-			title='Tutor Applications'
-			subtitle='Review your submitted tutor applications and create a new one when needed.'
-			buttonText='New Application'
+			title="Tutor Applications"
+			subtitle="Review your submitted tutor applications and create a new one when needed."
+			buttonText="New Application"
 			onButtonClick={handleOpenModal}>
-			<section className='dashboard-panel enhanced-panel'>
-				<h2>My Applications</h2>
-				<DataTable
-					columns={columns}
-					data={tutorApplications}
-					isLoading={isApplicationsLoading}
-					emptyTitle='No tutor applications yet'
-					emptyText='Click "New Application" to submit your first tutor application.'
-				/>
-			</section>
+			<Card>
+				<CardContent className="p-6">
+					<h2 className="mb-4 text-lg font-bold text-slate-900">
+						My Applications
+					</h2>
+					<DataTable
+						columns={columns}
+						data={tutorApplications}
+						isLoading={isApplicationsLoading}
+						emptyTitle="No tutor applications yet"
+						emptyText='Click "New Application" to submit your first tutor application.'
+					/>
+				</CardContent>
+			</Card>
 
 			<Modal
 				isOpen={isModalOpen}
 				onClose={handleCloseModal}
-				title='Submit Tutor Application'
-				size='lg'>
-				<form
-					className='booking-form'
-					onSubmit={handleSubmit}>
-						<label>Name</label>
-						<input
-							type='text'
-							name='name'
-							value={formData.name}
-							readOnly
-							required
-						/>
+				title="Submit Tutor Application"
+				size="lg">
+				<form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+					<div className="flex flex-col gap-1.5">
+						<Label>Name</Label>
+						<Input type="text" name="name" value={formData.name} readOnly required />
+					</div>
 
-						<label>Email</label>
-						<input
-							type='email'
-							name='email'
-							value={formData.email}
-							readOnly
-							required
-						/>
+					<div className="flex flex-col gap-1.5">
+						<Label>Email</Label>
+						<Input type="email" name="email" value={formData.email} readOnly required />
+					</div>
 
-						<label>Course You Want to Teach</label>
-						<input
-							type='text'
-							name='course'
+					<div className="flex flex-col gap-1.5">
+						<Label>Course You Want to Teach</Label>
+						<Input
+							type="text"
+							name="course"
 							value={formData.course}
 							onChange={handleChange}
-							placeholder='Example: CSCI 4710 - Database Systems'
+							placeholder="Example: CSCI 4710 - Database Systems"
 							required
 						/>
+					</div>
 
-						<div
-							style={{
-								display: "flex",
-								flexDirection: "column",
-								gap: "16px",
-								marginBottom: "16px",
-							}}>
-							<div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-								<label>Availability Slots</label>
-								<p style={{ color: "#64748b", fontSize: "0.95rem" }}>
-									Choose the day, the time range you are available, and how
-									long each student session should be.
-								</p>
-							</div>
+					<div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+						<div className="flex flex-col gap-1">
+							<Label>Availability Slots</Label>
+							<p className="text-sm text-slate-500">
+								Choose the day, the time range you are available, and how long
+								each student session should be.
+							</p>
+						</div>
 
-							<div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-								<label>Day Available</label>
+						<div className="flex flex-col gap-1.5">
+							<Label>Day Available</Label>
+							<select
+								className={selectClass}
+								name="day"
+								value={slotForm.day}
+								onChange={handleSlotChange}>
+								<option value="">Select day</option>
+								{DAYS?.map((day) => (
+									<option key={day} value={day}>
+										{day}
+									</option>
+								))}
+							</select>
+						</div>
+
+						<div className="flex flex-col gap-1.5">
+							<Label>Start Time</Label>
+							<div className="flex flex-wrap items-center gap-2">
 								<select
-									name='day'
-									value={slotForm.day}
-									onChange={handleSlotChange}
-									required={!slotForm}>
-									<option value=''>Select day</option>
-									{DAYS?.map((day) => (
-										<option
-											key={day}
-											value={day}>
-											{day}
+									className={selectClass + " w-auto"}
+									name="hour"
+									value={slotForm.hour}
+									onChange={handleSlotChange}>
+									<option value="">Hour</option>
+									{HOURS.map((hour) => (
+										<option key={hour} value={hour}>
+											{hour}
+										</option>
+									))}
+								</select>
+								<select
+									className={selectClass + " w-auto"}
+									name="minute"
+									value={slotForm.minute}
+									onChange={handleSlotChange}>
+									{MINUTES.map((minute) => (
+										<option key={minute} value={minute}>
+											{minute}
+										</option>
+									))}
+								</select>
+								<select
+									className={selectClass + " w-auto"}
+									name="period"
+									value={slotForm.period}
+									onChange={handleSlotChange}>
+									{PERIODS.map((period) => (
+										<option key={period} value={period}>
+											{period}
 										</option>
 									))}
 								</select>
 							</div>
+						</div>
 
-							<div
-								style={{
-									display: "flex",
-									flexDirection: "column",
-									gap: "8px",
-								}}>
-								<label>Start Time</label>
-								<div
-									style={{
-										display: "flex",
-										alignItems: "center",
-										gap: "8px",
-										flexWrap: "wrap",
-									}}>
-									<select
-										name='hour'
-										value={slotForm.hour}
-										onChange={handleSlotChange}
-										required={!slotForm}>
-										<option value=''>Hour</option>
-										{HOURS.map((hour) => (
-											<option
-												key={hour}
-												value={hour}>
-												{hour}
-											</option>
-										))}
-									</select>
-									<select
-										name='minute'
-										value={slotForm.minute}
-										onChange={handleSlotChange}
-										required={!slotForm}>
-										{MINUTES.map((minute) => (
-											<option
-												key={minute}
-												value={minute}>
-												{minute}
-											</option>
-										))}
-									</select>
-
-									<select
-										name='period'
-										value={slotForm.period}
-										onChange={handleSlotChange}
-										required={!slotForm}>
-										{PERIODS.map((period) => (
-											<option
-												key={period}
-												value={period}>
-												{period}
-											</option>
-										))}
-									</select>
-								</div>
-							</div>
-
-							<div
-								style={{
-									display: "flex",
-									flexDirection: "column",
-									gap: "8px",
-								}}>
-								<label>End Time</label>
-								<div
-									style={{
-										display: "flex",
-										alignItems: "center",
-										gap: "8px",
-										flexWrap: "wrap",
-									}}>
-									<select
-										name='endHour'
-										value={slotForm.endHour}
-										onChange={handleSlotChange}>
-										<option value=''>Hour</option>
-										{HOURS.map((hour) => (
-											<option
-												key={hour}
-												value={hour}>
-												{hour}
-											</option>
-										))}
-									</select>
-
-									<select
-										name='endMinute'
-										value={slotForm.endMinute}
-										onChange={handleSlotChange}>
-										{MINUTES.map((minute) => (
-											<option
-												key={minute}
-												value={minute}>
-												{minute}
-											</option>
-										))}
-									</select>
-
-									<select
-										name='endPeriod'
-										value={slotForm.endPeriod}
-										onChange={handleSlotChange}>
-										{PERIODS.map((period) => (
-											<option
-												key={period}
-												value={period}>
-												{period}
-											</option>
-										))}
-									</select>
-								</div>
-							</div>
-
-							<div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-								<label>Session Length</label>
+						<div className="flex flex-col gap-1.5">
+							<Label>End Time</Label>
+							<div className="flex flex-wrap items-center gap-2">
 								<select
-									name='sessionLengthMinutes'
-									value={slotForm.sessionLengthMinutes}
+									className={selectClass + " w-auto"}
+									name="endHour"
+									value={slotForm.endHour}
 									onChange={handleSlotChange}>
-									<option value='30'>30 minutes</option>
-									<option value='45'>45 minutes</option>
-									<option value='60'>60 minutes</option>
-									<option value='90'>90 minutes</option>
-									<option value='120'>120 minutes</option>
+									<option value="">Hour</option>
+									{HOURS.map((hour) => (
+										<option key={hour} value={hour}>
+											{hour}
+										</option>
+									))}
 								</select>
-							</div>
-
-							<div
-								style={{
-									display: "flex",
-									gap: "8px",
-									flexWrap: "wrap",
-								}}>
-								<button
-									type='button'
-									className='primary-btn'
-									onClick={handleAddAvailability}
-									disabled={isSlotIncomplete}
-									style={{
-										opacity: isSlotIncomplete ? 0.6 : 1,
-										cursor: isSlotIncomplete ? "not-allowed" : "pointer",
-									}}>
-									{editingIndex !== null
-										? "Save Slot"
-										: "Add Availability Slot"}
-								</button>
-								{editingIndex !== null && (
-									<button
-										type='button'
-										className='secondary-btn'
-										onClick={resetSlotForm}>
-										Cancel Edit
-									</button>
-								)}
+								<select
+									className={selectClass + " w-auto"}
+									name="endMinute"
+									value={slotForm.endMinute}
+									onChange={handleSlotChange}>
+									{MINUTES.map((minute) => (
+										<option key={minute} value={minute}>
+											{minute}
+										</option>
+									))}
+								</select>
+								<select
+									className={selectClass + " w-auto"}
+									name="endPeriod"
+									value={slotForm.endPeriod}
+									onChange={handleSlotChange}>
+									{PERIODS.map((period) => (
+										<option key={period} value={period}>
+											{period}
+										</option>
+									))}
+								</select>
 							</div>
 						</div>
 
-						{availability.length > 0 && (
-							<div style={{ marginBottom: "16px" }}>
-								{availability.map((slot, index) => (
-									<div
-										key={`${slot.day}-${slot.startTime}-${slot.endTime}-${index}`}
-										style={{
-											display: "flex",
-											justifyContent: "space-between",
-											alignItems: "center",
-											marginBottom: "8px",
-											padding: "10px 12px",
-											border: "1px solid #ddd",
-											borderRadius: "8px",
-											gap: "12px",
-											flexWrap: "wrap",
-										}}>
-										<span>{formatAvailabilitySlot(slot)}</span>
+						<div className="flex flex-col gap-1.5">
+							<Label>Session Length</Label>
+							<select
+								className={selectClass}
+								name="sessionLengthMinutes"
+								value={slotForm.sessionLengthMinutes}
+								onChange={handleSlotChange}>
+								<option value="30">30 minutes</option>
+								<option value="45">45 minutes</option>
+								<option value="60">60 minutes</option>
+								<option value="90">90 minutes</option>
+								<option value="120">120 minutes</option>
+							</select>
+						</div>
 
-										<div style={{ display: "flex", gap: "8px" }}>
-											<button
-												type='button'
-												onClick={() => handleEditAvailability(index)}
-												style={{
-													backgroundColor: "#2563eb",
-													color: "#fff",
-													border: "none",
-													padding: "8px 12px",
-													borderRadius: "6px",
-													cursor: "pointer",
-												}}>
-												Edit
-											</button>
+						<div className="flex flex-wrap gap-2">
+							<Button
+								type="button"
+								onClick={handleAddAvailability}
+								disabled={isSlotIncomplete}>
+								{editingIndex !== null ? "Save Slot" : "Add Availability Slot"}
+							</Button>
+							{editingIndex !== null && (
+								<Button type="button" variant="outline" onClick={resetSlotForm}>
+									Cancel Edit
+								</Button>
+							)}
+						</div>
+					</div>
 
-											<button
-												type='button'
-												onClick={() => handleRemoveAvailability(index)}
-												style={{
-													backgroundColor: "#dc2626",
-													color: "#fff",
-													border: "none",
-													padding: "8px 12px",
-													borderRadius: "6px",
-													cursor: "pointer",
-												}}>
-												Remove
-											</button>
-										</div>
+					{availability.length > 0 && (
+						<div className="flex flex-col gap-2">
+							{availability.map((slot, index) => (
+								<div
+									key={`${slot.day}-${slot.startTime}-${slot.endTime}-${index}`}
+									className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+									<span className="text-sm text-slate-700">
+										{formatAvailabilitySlot(slot)}
+									</span>
+									<div className="flex gap-2">
+										<Button
+											type="button"
+											size="sm"
+											onClick={() => handleEditAvailability(index)}>
+											Edit
+										</Button>
+										<Button
+											type="button"
+											size="sm"
+											variant="destructive"
+											onClick={() => handleRemoveAvailability(index)}>
+											Remove
+										</Button>
 									</div>
-								))}
-							</div>
-						)}
+								</div>
+							))}
+						</div>
+					)}
 
-						<label>Short Bio</label>
+					<div className="flex flex-col gap-1.5">
+						<Label>Short Bio</Label>
 						<textarea
-							name='bio'
+							className="flex min-h-[96px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+							name="bio"
 							value={formData.bio}
 							onChange={handleChange}
-							placeholder='Write a short summary about your tutoring strength.'
-							rows='4'
+							placeholder="Write a short summary about your tutoring strength."
+							rows="4"
 							required
 						/>
+					</div>
 
-					<button
-						type='submit'
-						className='primary-btn'
-						disabled={isPending}>
+					<Button type="submit" disabled={isPending} className="w-full">
 						{isPending ? "Submitting..." : "Submit Application"}
-					</button>
+					</Button>
 				</form>
 			</Modal>
 		</Layout>

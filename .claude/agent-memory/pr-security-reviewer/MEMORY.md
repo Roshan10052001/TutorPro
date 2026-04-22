@@ -1,2 +1,4 @@
-- [TutorPro Project Architecture](project_architecture.md) — stack, auth pattern, role model, sensitive modules
-- [Security Findings PR8](security_findings_pr8.md) — critical/high issues found in pr8 (missing admin authz, broken booking, stale routes)
+# PR Security Reviewer Memory Index
+
+- [Project Architecture](project_architecture.md) — TutorPro stack, backend auth/booking patterns, key security boundaries
+- [User Profile](user_profile.md) — reviewer identity and collaboration preferences

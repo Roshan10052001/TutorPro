@@ -2,13 +2,14 @@ import { useContext } from "react";
 import StarRating from "./StarRating";
 import { AuthContext } from "../context";
 import { useDeleteReview } from "../hooks/review";
+import { Button } from "@/components/ui/button";
 
 function ReviewList({ reviews = [] }) {
 	const { user, role } = useContext(AuthContext);
 	const { mutate: removeReview, isPending } = useDeleteReview();
 
 	if (reviews.length === 0) {
-		return <p className='muted-text'>No reviews yet.</p>;
+		return <p className="text-sm text-slate-500">No reviews yet.</p>;
 	}
 
 	const canDelete = (review) =>
@@ -16,15 +17,17 @@ function ReviewList({ reviews = [] }) {
 		review.student?._id?.toString() === user?.id?.toString();
 
 	return (
-		<ul className='review-list'>
+		<ul className="flex flex-col gap-4">
 			{reviews.map((review) => (
 				<li
 					key={review._id}
-					className='review-item dashboard-panel'>
-					<div className='review-item-header'>
+					className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+					<div className="flex items-start justify-between gap-3">
 						<div>
-							<strong>{review.student?.name || "Anonymous"}</strong>
-							<div>
+							<strong className="text-sm font-semibold text-slate-900">
+								{review.student?.name || "Anonymous"}
+							</strong>
+							<div className="mt-1">
 								<StarRating
 									value={review.rating}
 									readOnly
@@ -32,21 +35,25 @@ function ReviewList({ reviews = [] }) {
 								/>
 							</div>
 						</div>
-						<span className='muted-text'>
+						<span className="text-xs text-slate-500">
 							{review.createdAt
 								? new Date(review.createdAt).toLocaleDateString()
 								: ""}
 						</span>
 					</div>
-					{review.comment ? <p>{review.comment}</p> : null}
+					{review.comment ? (
+						<p className="mt-2 text-sm text-slate-700">{review.comment}</p>
+					) : null}
 					{canDelete(review) ? (
-						<button
-							type='button'
-							className='secondary-btn'
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							className="mt-3 border-rose-300 text-rose-600 hover:bg-rose-50"
 							disabled={isPending}
 							onClick={() => removeReview(review._id)}>
 							Delete
-						</button>
+						</Button>
 					) : null}
 				</li>
 			))}

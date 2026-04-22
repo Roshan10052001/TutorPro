@@ -9,6 +9,18 @@ import { useGetMyReviews } from "../hooks/review";
 import ReviewDialog from "../components/ReviewDialog";
 import BookingForm from "./BookSession/BookingForm";
 import { convertTimeToMinutes } from "../utils/functions";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+
+const STATUS_VARIANTS = {
+	booked: "bg-blue-100 text-blue-800",
+	confirmed: "bg-emerald-100 text-emerald-800",
+	approved: "bg-emerald-100 text-emerald-800",
+	pending: "bg-amber-100 text-amber-800",
+	open: "bg-sky-100 text-sky-800",
+	rejected: "bg-rose-100 text-rose-800",
+};
 
 function Sessions() {
 	const { user, role, activeView, effectiveRole } = useContext(AuthContext);
@@ -126,11 +138,16 @@ function Sessions() {
 			{
 				key: "status",
 				header: "Status",
-				render: (session) => (
-					<span className={`status-badge ${session.status || "pending"}`}>
-						{session.status || "pending"}
-					</span>
-				),
+				render: (session) => {
+					const s = session.status || "pending";
+					return (
+						<Badge
+							variant="secondary"
+							className={`font-semibold ${STATUS_VARIANTS[s] || ""}`}>
+							{s}
+						</Badge>
+					);
+				},
 			},
 			{
 				key: "notes",
@@ -145,19 +162,20 @@ function Sessions() {
 							render: (session) => {
 								if (session.status === "pending") {
 									return (
-										<button
-											type='button'
-											className='secondary-btn'
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
 											onClick={() => setPendingDecision(session)}>
 											Review request
-										</button>
+										</Button>
 									);
 								}
 								if (session.status === "confirmed") {
 									return (
-										<button
-											type='button'
-											className='secondary-btn'
+										<Button
+											type="button"
+											size="sm"
 											disabled={isUpdatingStatus}
 											onClick={() =>
 												updateStatus({
@@ -166,7 +184,7 @@ function Sessions() {
 												})
 											}>
 											Mark complete
-										</button>
+										</Button>
 									);
 								}
 								return "—";
@@ -182,14 +200,15 @@ function Sessions() {
 							render: (session) => {
 								if (session.status !== "completed") return "—";
 								if (reviewedBookingIds.has(session._id))
-									return <span className='muted-text'>Reviewed</span>;
+									return <span className="text-sm text-slate-500">Reviewed</span>;
 								return (
-									<button
-										type='button'
-										className='secondary-btn'
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
 										onClick={() => setReviewTarget(session)}>
 										Leave review
-									</button>
+									</Button>
 								);
 							},
 						},
@@ -246,26 +265,28 @@ function Sessions() {
 			subtitle={pageSubtitle}
 			buttonText={effectiveRole === "student" ? "Book New Session" : undefined}
 			onButtonClick={effectiveRole === "student" ? handleOpenModal : undefined}>
-			<section className='dashboard-panel enhanced-panel'>
-				<h2>Session List</h2>
-				<DataTable
-					columns={columns}
-					data={sortedSessions}
-					isLoading={isSessionsLoading}
-					emptyTitle='No sessions yet'
-					emptyText={
-						effectiveRole === "student"
-							? 'Click "Book New Session" to schedule your first tutoring session.'
-							: "There are no sessions to show right now."
-					}
-				/>
-			</section>
+			<Card>
+				<CardContent className="p-6">
+					<h2 className="mb-4 text-lg font-bold text-slate-900">Session List</h2>
+					<DataTable
+						columns={columns}
+						data={sortedSessions}
+						isLoading={isSessionsLoading}
+						emptyTitle="No sessions yet"
+						emptyText={
+							effectiveRole === "student"
+								? 'Click "Book New Session" to schedule your first tutoring session.'
+								: "There are no sessions to show right now."
+						}
+					/>
+				</CardContent>
+			</Card>
 
 			<Modal
 				isOpen={isModalOpen}
 				onClose={handleCloseModal}
-				title='Book New Session'
-				size='lg'>
+				title="Book New Session"
+				size="lg">
 				<BookingForm
 					initialTutorId={requestedTutorId}
 					onSuccess={handleCloseModal}
@@ -276,49 +297,49 @@ function Sessions() {
 			<Modal
 				isOpen={Boolean(pendingDecision)}
 				onClose={() => (isUpdatingStatus ? null : setPendingDecision(null))}
-				title='Session Request'
-				size='md'
+				title="Session Request"
+				size="md"
 				footer={
 					<>
-						<button
-							type='button'
-							className='secondary-btn'
+						<Button
+							type="button"
+							variant="outline"
+							className="border-rose-400 text-rose-700 hover:bg-rose-50"
 							disabled={isUpdatingStatus}
 							onClick={() => handleDecision("cancelled")}>
 							Reject
-						</button>
-						<button
-							type='button'
-							className='primary-btn'
+						</Button>
+						<Button
+							type="button"
 							disabled={isUpdatingStatus}
 							onClick={() => handleDecision("confirmed")}>
 							Approve
-						</button>
+						</Button>
 					</>
 				}>
 				{pendingDecision ? (
-					<div>
+					<div className="flex flex-col gap-2 text-sm text-slate-700">
 						<p>
-							<strong>Student:</strong>{" "}
+							<strong className="text-slate-900">Student:</strong>{" "}
 							{pendingDecision.student?.name || "Unknown"}
 						</p>
 						<p>
-							<strong>Course:</strong> {pendingDecision.course || "-"}
+							<strong className="text-slate-900">Course:</strong> {pendingDecision.course || "-"}
 						</p>
 						<p>
-							<strong>Date:</strong>{" "}
+							<strong className="text-slate-900">Date:</strong>{" "}
 							{pendingDecision.date
 								? new Date(pendingDecision.date).toLocaleDateString()
 								: "-"}
 						</p>
 						<p>
-							<strong>Time:</strong> {pendingDecision.startTime} -{" "}
+							<strong className="text-slate-900">Time:</strong> {pendingDecision.startTime} -{" "}
 							{pendingDecision.endTime}
 						</p>
 						<p>
-							<strong>Notes:</strong> {pendingDecision.notes || "No notes"}
+							<strong className="text-slate-900">Notes:</strong> {pendingDecision.notes || "No notes"}
 						</p>
-						<p>Approve or reject this session request?</p>
+						<p className="mt-2">Approve or reject this session request?</p>
 					</div>
 				) : null}
 			</Modal>

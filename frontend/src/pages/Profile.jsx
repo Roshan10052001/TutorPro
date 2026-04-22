@@ -1,10 +1,16 @@
 import { useContext, useState } from "react";
-import "../styles/Profile.css";
 import Layout from "../components/Layout";
 import { AuthContext } from "../context";
 import { useUpdateUserProfile } from "../hooks/user";
-import Swal from "sweetalert2";
+import { useConfirm } from "../components/ConfirmProvider";
 import { MAJORS, SUBJECT_OPTIONS, YEARS } from "../utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+
+const selectClass =
+	"flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20";
 
 function Profile() {
 	const { user, effectiveRole, activeView, updateUser } = useContext(AuthContext);
@@ -21,6 +27,7 @@ function Profile() {
 	});
 
 	const { mutateAsync: updateProfile, isPending } = useUpdateUserProfile();
+	const confirm = useConfirm();
 
 	const sidebarRole =
 		effectiveRole === "admin"
@@ -35,16 +42,12 @@ function Profile() {
 
 	const handleChange = (e) => {
 		const { name, value } = e.target;
-		setFormData((prev) => ({
-			...prev,
-			[name]: value,
-		}));
+		setFormData((prev) => ({ ...prev, [name]: value }));
 	};
 
 	const handleSubjectChange = (subject) => {
 		setFormData((prev) => {
 			const alreadySelected = prev.subjects.includes(subject);
-
 			return {
 				...prev,
 				subjects: alreadySelected
@@ -55,17 +58,11 @@ function Profile() {
 	};
 
 	const handleSave = async () => {
-		const result = await Swal.fire({
+		const ok = await confirm({
 			title: "Confirmation",
-			text: "Are you sure you want to edit this profile?",
-			icon: "question",
-			showCancelButton: true,
-			confirmButtonText: "Yes",
-			cancelButtonText: "Cancel",
-			reverseButtons: true,
+			description: "Are you sure you want to edit this profile?",
 		});
-
-		if (!result.isConfirmed) return;
+		if (!ok) return;
 		try {
 			const updatedUser = await updateProfile({
 				name: formData.name,
@@ -90,225 +87,212 @@ function Profile() {
 			updateUser(updatedUser);
 			setIsEditing(false);
 		} catch {
-			//error handled in hook, just reset pending state here
+			//error handled in hook
 		}
 	};
+
+	const renderField = (label, children) => (
+		<div className="flex flex-col gap-1.5">
+			<Label className="text-xs uppercase tracking-wide text-slate-500">
+				{label}
+			</Label>
+			{children}
+		</div>
+	);
+
+	const renderReadOnly = (value) => (
+		<div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900">
+			{value || "Not provided"}
+		</div>
+	);
 
 	return (
 		<Layout
 			page={sidebarRole}
-			title='Profile'
-			subtitle='Manage your account and personal details.'
+			title="Profile"
+			subtitle="Manage your account and personal details."
 			buttonText={isEditing ? "Cancel" : "Edit Profile"}
 			onButtonClick={() => setIsEditing(!isEditing)}>
-			<section className='dashboard-panel profile-card'>
-				<h2>Basic Information</h2>
-
-				<div className='profile-grid'>
-					<div className='profile-field'>
-						<label className='profile-label'>Name</label>
-						{isEditing ? (
-							<input
-								className='profile-input'
-								type='text'
-								name='name'
-								value={formData.name}
-								onChange={handleChange}
-							/>
-						) : (
-							<div className='profile-value'>
-								{formData.name || "Not provided"}
-							</div>
-						)}
-					</div>
-
-						<div className='profile-field'>
-							<label className='profile-label'>Email</label>
-							<div className='profile-value'>
-								{formData.email || "Not provided"}
-							</div>
-						</div>
-
-					<div className='profile-field'>
-						<label className='profile-label'>Phone</label>
-						{isEditing ? (
-							<input
-								className='profile-input'
-								type='text'
-								name='phone'
-								value={formData.phone}
-								onChange={handleChange}
-							/>
-						) : (
-							<div className='profile-value'>
-								{formData.phone || "Not provided"}
-							</div>
-						)}
-					</div>
-
-					<div className='profile-field'>
-						<label className='profile-label'>Address</label>
-						{isEditing ? (
-							<input
-								className='profile-input'
-								type='text'
-								name='address'
-								value={formData.address}
-								onChange={handleChange}
-							/>
-						) : (
-							<div className='profile-value'>
-								{formData.address || "Not provided"}
-							</div>
-						)}
-					</div>
-
-					<div className='profile-field'>
-						<label className='profile-label'>Role</label>
-						<div className='profile-value'>{formattedRole}</div>
-					</div>
-
-					{user?.role === "tutor" ? (
-						<div className='profile-field'>
-							<label className='profile-label'>Current View</label>
-							<div className='profile-value'>
-								{activeView === "student" ? "Student" : "Tutor"}
-							</div>
-						</div>
-					) : null}
-
-					<div className='profile-field'>
-						<label className='profile-label'>University</label>
-						<div className='profile-value'>Saint Louis University</div>
-					</div>
-				</div>
-			</section>
-
-			{effectiveRole === "student" && (
-				<section className='dashboard-panel profile-card'>
-					<h2>Student Details</h2>
-
-					<div className='profile-grid'>
-						<div className='profile-field'>
-							<label className='profile-label'>Major</label>
-							{isEditing ? (
-								<select
-									className='profile-input'
-									name='major'
-									value={formData.major}
-									onChange={handleChange}>
-									<option value=''>Select Major</option>
-									{MAJORS.map((major) => (
-										<option
-											key={major}
-											value={major}>
-											{major}
-										</option>
-									))}
-								</select>
-							) : (
-								<div className='profile-value'>
-									{formData.major || "Not provided"}
-								</div>
-							)}
-						</div>
-
-						<div className='profile-field'>
-							<label className='profile-label'>Year</label>
-							{isEditing ? (
-								<select
-									className='profile-input'
-									name='year'
-									value={formData.year}
-									onChange={handleChange}>
-									<option value=''>Select Year</option>
-									{YEARS.map((year) => (
-										<option
-											key={year}
-											value={year}>
-											{year}
-										</option>
-									))}
-								</select>
-							) : (
-								<div className='profile-value'>
-									{formData.year || "Not provided"}
-								</div>
-							)}
-						</div>
-					</div>
-				</section>
-			)}
-
-			{effectiveRole === "tutor" && (
-				<section className='dashboard-panel profile-card'>
-					<h2>Tutor Details</h2>
-
-					<div className='profile-grid'>
-						<div className='profile-field'>
-							<label className='profile-label'>Subjects</label>
-
-							{isEditing ? (
-								<div className='checkbox-group'>
-									{SUBJECT_OPTIONS.map((subject) => (
-										<label
-											key={subject}
-											style={{ display: "block" }}>
-											<input
-												type='checkbox'
-												checked={formData.subjects.includes(subject)}
-												onChange={() => handleSubjectChange(subject)}
-											/>{" "}
-											{subject}
-										</label>
-									))}
-								</div>
-							) : (
-								<div className='profile-value'>
-									{formData.subjects.length > 0
-										? formData.subjects.join(", ")
-										: "Not provided"}
-								</div>
-							)}
-						</div>
-
-						<div className='profile-field'>
-							<label className='profile-label'>Experience (years)</label>
-							{isEditing ? (
-								<input
-									className='profile-input'
-									type='text'
-									name='experience'
-									value={formData.experience}
+			<Card className="mb-6">
+				<CardContent className="p-6">
+					<h2 className="mb-4 text-lg font-bold text-slate-900">
+						Basic Information
+					</h2>
+					<div className="grid gap-5 sm:grid-cols-2">
+						{renderField(
+							"Name",
+							isEditing ? (
+								<Input
+									type="text"
+									name="name"
+									value={formData.name}
 									onChange={handleChange}
 								/>
 							) : (
-								<div className='profile-value'>
-									{formData.experience || "Not provided"}
-								</div>
+								renderReadOnly(formData.name)
+							),
+						)}
+						{renderField("Email", renderReadOnly(formData.email))}
+						{renderField(
+							"Phone",
+							isEditing ? (
+								<Input
+									type="text"
+									name="phone"
+									value={formData.phone}
+									onChange={handleChange}
+								/>
+							) : (
+								renderReadOnly(formData.phone)
+							),
+						)}
+						{renderField(
+							"Address",
+							isEditing ? (
+								<Input
+									type="text"
+									name="address"
+									value={formData.address}
+									onChange={handleChange}
+								/>
+							) : (
+								renderReadOnly(formData.address)
+							),
+						)}
+						{renderField("Role", renderReadOnly(formattedRole))}
+						{user?.role === "tutor"
+							? renderField(
+								"Current View",
+								renderReadOnly(activeView === "student" ? "Student" : "Tutor"),
+							)
+							: null}
+						{renderField("University", renderReadOnly("Saint Louis University"))}
+					</div>
+				</CardContent>
+			</Card>
+
+			{effectiveRole === "student" && (
+				<Card className="mb-6">
+					<CardContent className="p-6">
+						<h2 className="mb-4 text-lg font-bold text-slate-900">
+							Student Details
+						</h2>
+						<div className="grid gap-5 sm:grid-cols-2">
+							{renderField(
+								"Major",
+								isEditing ? (
+									<select
+										className={selectClass}
+										name="major"
+										value={formData.major}
+										onChange={handleChange}>
+										<option value="">Select Major</option>
+										{MAJORS.map((major) => (
+											<option key={major} value={major}>
+												{major}
+											</option>
+										))}
+									</select>
+								) : (
+									renderReadOnly(formData.major)
+								),
+							)}
+							{renderField(
+								"Year",
+								isEditing ? (
+									<select
+										className={selectClass}
+										name="year"
+										value={formData.year}
+										onChange={handleChange}>
+										<option value="">Select Year</option>
+										{YEARS.map((year) => (
+											<option key={year} value={year}>
+												{year}
+											</option>
+										))}
+									</select>
+								) : (
+									renderReadOnly(formData.year)
+								),
 							)}
 						</div>
-					</div>
-				</section>
+					</CardContent>
+				</Card>
+			)}
+
+			{effectiveRole === "tutor" && (
+				<Card className="mb-6">
+					<CardContent className="p-6">
+						<h2 className="mb-4 text-lg font-bold text-slate-900">
+							Tutor Details
+						</h2>
+						<div className="grid gap-5 sm:grid-cols-2">
+							{renderField(
+								"Subjects",
+								isEditing ? (
+									<div className="flex flex-col gap-2">
+										{SUBJECT_OPTIONS.map((subject) => (
+											<label
+												key={subject}
+												className="flex items-center gap-2 text-sm text-slate-700">
+												<input
+													type="checkbox"
+													className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+													checked={formData.subjects.includes(subject)}
+													onChange={() => handleSubjectChange(subject)}
+												/>
+												{subject}
+											</label>
+										))}
+									</div>
+								) : (
+									renderReadOnly(
+										formData.subjects.length > 0
+											? formData.subjects.join(", ")
+											: "",
+									)
+								),
+							)}
+							{renderField(
+								"Experience (years)",
+								isEditing ? (
+									<Input
+										type="text"
+										name="experience"
+										value={formData.experience}
+										onChange={handleChange}
+									/>
+								) : (
+									renderReadOnly(formData.experience)
+								),
+							)}
+						</div>
+					</CardContent>
+				</Card>
 			)}
 
 			{isEditing && (
-				<div className='profile-actions'>
-					<button
-						className='btn-primary'
-						onClick={handleSave}>
+				<div className="mb-6 flex justify-end">
+					<Button onClick={handleSave} disabled={isPending}>
 						{isPending ? "Saving..." : "Save Changes"}
-					</button>
+					</Button>
 				</div>
 			)}
 
-			<section className='dashboard-panel profile-card'>
-				<h2>Account Actions</h2>
-				<div className='account-actions'>
-					<button className='btn-warning'>Change Password</button>
-					<button className='btn-danger'>Delete Account</button>
-				</div>
-			</section>
+			<Card>
+				<CardContent className="p-6">
+					<h2 className="mb-4 text-lg font-bold text-slate-900">
+						Account Actions
+					</h2>
+					<div className="flex flex-wrap gap-3">
+						<Button variant="outline" className="border-amber-400 text-amber-700 hover:bg-amber-50">
+							Change Password
+						</Button>
+						<Button variant="destructive">Delete Account</Button>
+					</div>
+				</CardContent>
+			</Card>
 		</Layout>
 	);
 }

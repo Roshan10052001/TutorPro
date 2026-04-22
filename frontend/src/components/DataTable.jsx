@@ -1,4 +1,13 @@
 import Loader from "./Loader";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 function DataTable({
 	columns,
@@ -11,56 +20,59 @@ function DataTable({
 	const hasRows = Array.isArray(data) && data.length > 0;
 
 	return (
-		<div className='data-table-shell'>
-			<div className='data-table-scroll'>
-				<table className='data-table'>
-					<thead>
-						<tr>
-							{columns.map((column) => (
-								<th
-									key={column.key}
-									className={column.headerClassName || ""}>
-									{column.header}
-								</th>
-							))}
-						</tr>
-					</thead>
-					<tbody>
-						{isLoading ? (
-							<tr>
-								<td
-									colSpan={columns.length}
-									className='data-table-empty'>
-									<Loader />
-								</td>
-							</tr>
-						) : hasRows ? (
-							data.map((row, index) => (
-								<tr key={row[rowKey] ?? `${rowKey}-${index}`}>
-									{columns.map((column) => (
-										<td
-											key={column.key}
-											className={column.cellClassName || ""}>
-											{column.render
-												? column.render(row, index)
-												: row[column.key] ?? "-"}
-										</td>
-									))}
-								</tr>
-							))
-						) : (
-							<tr>
-								<td
-									colSpan={columns.length}
-									className='data-table-empty'>
-									<h3>{emptyTitle}</h3>
-									<p>{emptyText}</p>
-								</td>
-							</tr>
-						)}
-					</tbody>
-				</table>
-			</div>
+		<div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+			<Table>
+				<TableHeader>
+					<TableRow>
+						{columns.map((column) => (
+							<TableHead
+								key={column.key}
+								className={cn(
+									"bg-slate-50 font-semibold text-slate-700",
+									column.headerClassName
+								)}>
+								{column.header}
+							</TableHead>
+						))}
+					</TableRow>
+				</TableHeader>
+				<TableBody>
+					{isLoading ? (
+						<TableRow>
+							<TableCell
+								colSpan={columns.length}
+								className="py-10 text-center">
+								<Loader />
+							</TableCell>
+						</TableRow>
+					) : hasRows ? (
+						data.map((row, index) => (
+							<TableRow key={row[rowKey] ?? `${rowKey}-${index}`}>
+								{columns.map((column) => (
+									<TableCell
+										key={column.key}
+										className={column.cellClassName}>
+										{column.render
+											? column.render(row, index)
+											: row[column.key] ?? "-"}
+									</TableCell>
+								))}
+							</TableRow>
+						))
+					) : (
+						<TableRow>
+							<TableCell
+								colSpan={columns.length}
+								className="py-10 text-center">
+								<h3 className="text-base font-semibold text-slate-900">
+									{emptyTitle}
+								</h3>
+								<p className="mt-1 text-sm text-slate-500">{emptyText}</p>
+							</TableCell>
+						</TableRow>
+					)}
+				</TableBody>
+			</Table>
 		</div>
 	);
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
 import StatCard from "../components/StatCard";
@@ -9,7 +9,6 @@ import Modal from "../components/Modal";
 import { useGetTutors } from "../hooks/tutor";
 import { useGetBookings } from "../hooks/booking";
 import { useUpdateMyTutorAvailability } from "../hooks/tutorApplication";
-import { useContext } from "react";
 import { AuthContext } from "../context";
 import {
 	convertMinutesToTime,
@@ -17,12 +16,19 @@ import {
 	getNextDateForDay,
 } from "../utils/functions";
 import { DAYS, HOURS, MINUTES, PERIODS, warnAlert } from "../utils";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+
+const selectClass =
+	"flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20";
 
 function TutorDashboard() {
 	const navigate = useNavigate();
 	const { data: tutors = [] } = useGetTutors();
-	const { data: sessions = [], isPending: isSessionsLoading } =
-		useGetBookings({ view: "tutor" });
+	const { data: sessions = [], isPending: isSessionsLoading } = useGetBookings({
+		view: "tutor",
+	});
 	const {
 		mutateAsync: updateTutorAvailability,
 		isPending: isUpdatingAvailability,
@@ -46,7 +52,6 @@ function TutorDashboard() {
 
 	const formatAvailabilitySlot = (slot) => {
 		if (!slot || typeof slot !== "object") return String(slot || "-");
-
 		return `${slot.day}: ${slot.startTime} - ${slot.endTime} • ${slot.sessionLengthMinutes} min sessions`;
 	};
 
@@ -54,13 +59,12 @@ function TutorDashboard() {
 		const startMinutes = convertTimeToMinutes(slot.startTime);
 		const endMinutes = convertTimeToMinutes(slot.endTime);
 		const sessionLength = Number(slot.sessionLengthMinutes || 60);
-
 		return Math.max(0, Math.floor((endMinutes - startMinutes) / sessionLength));
 	};
 
 	const myTutorProfiles = tutors.filter(
 		(tutor) =>
-			tutor.email.trim().toLowerCase() === user?.email.trim().toLowerCase(),
+			tutor.email.trim().toLowerCase() === user?.email.trim().toLowerCase()
 	);
 	const myTutorProfile =
 		myTutorProfiles.find((profile) => profile._id === selectedProfileId) ||
@@ -68,74 +72,57 @@ function TutorDashboard() {
 		null;
 
 	const mySessions = sessions.filter(
-		(session) => session.tutor?._id?.toString() === user?.id?.toString(),
+		(session) => session.tutor?._id?.toString() === user?.id?.toString()
 	);
 
 	const getSessionDateTime = (session) => {
 		if (!session?.date) return null;
-
 		const sessionDate = new Date(session.date);
 		const startMinutes = convertTimeToMinutes(session.startTime || "12:00 AM");
-
 		sessionDate.setHours(
 			Math.floor(startMinutes / 60),
 			startMinutes % 60,
 			0,
-			0,
+			0
 		);
-
 		return sessionDate;
 	};
 
-	const totalOpenAvailabilitySlots = myTutorProfiles.reduce(
-		(count, profile) => {
-			const labels = new Set(
-				(profile.bookedSlots || []).map((slot) => slot.label),
-			);
-
-			const profileOpenSlots = (profile.availability || []).reduce(
-				(slotCount, slot) => {
-					const startMinutes = convertTimeToMinutes(slot.startTime);
-					const endMinutes = convertTimeToMinutes(slot.endTime);
-					const sessionLength = Number(slot.sessionLengthMinutes || 60);
-					let generatedCount = 0;
-
-					for (
-						let current = startMinutes;
-						current + sessionLength <= endMinutes;
-						current += sessionLength
-					) {
-						const sessionStart = convertMinutesToTime(current);
-						const sessionEnd = convertMinutesToTime(current + sessionLength);
-						const label = `${slot.day} - ${sessionStart} to ${sessionEnd}`;
-
-						if (!labels.has(label)) {
-							generatedCount += 1;
-						}
-					}
-
-					return slotCount + generatedCount;
-				},
-				0,
-			);
-
-			return count + profileOpenSlots;
-		},
-		0,
-	);
+	const totalOpenAvailabilitySlots = myTutorProfiles.reduce((count, profile) => {
+		const labels = new Set(
+			(profile.bookedSlots || []).map((slot) => slot.label)
+		);
+		const profileOpenSlots = (profile.availability || []).reduce(
+			(slotCount, slot) => {
+				const startMinutes = convertTimeToMinutes(slot.startTime);
+				const endMinutes = convertTimeToMinutes(slot.endTime);
+				const sessionLength = Number(slot.sessionLengthMinutes || 60);
+				let generatedCount = 0;
+				for (
+					let current = startMinutes;
+					current + sessionLength <= endMinutes;
+					current += sessionLength
+				) {
+					const sessionStart = convertMinutesToTime(current);
+					const sessionEnd = convertMinutesToTime(current + sessionLength);
+					const label = `${slot.day} - ${sessionStart} to ${sessionEnd}`;
+					if (!labels.has(label)) generatedCount += 1;
+				}
+				return slotCount + generatedCount;
+			},
+			0
+		);
+		return count + profileOpenSlots;
+	}, 0);
 
 	const upcomingSessions = [...mySessions]
-		.sort(
-			(firstSession, secondSession) =>
-				getSessionDateTime(firstSession) - getSessionDateTime(secondSession),
-		)
+		.sort((a, b) => getSessionDateTime(a) - getSessionDateTime(b))
 		.slice(0, 5);
 
 	const formatSessionTime = (session) => {
 		if (!session?.date) {
 			return `${session?.startTime || ""} - ${session?.endTime || ""}`.trim();
 		}
-
 		const sessionDate = new Date(session.date);
 		const readableDate = sessionDate.toLocaleDateString(undefined, {
 			weekday: "short",
@@ -143,7 +130,6 @@ function TutorDashboard() {
 			day: "numeric",
 			year: "numeric",
 		});
-
 		return `${readableDate} • ${session.startTime} - ${session.endTime}`;
 	};
 
@@ -173,7 +159,6 @@ function TutorDashboard() {
 			navigate("/tutor-apply");
 			return;
 		}
-
 		const initialProfile = myTutorProfiles[0];
 		setSelectedProfileId(initialProfile._id);
 		setAvailability(initialProfile.availability || []);
@@ -192,9 +177,8 @@ function TutorDashboard() {
 	const handleProfileSelection = (event) => {
 		const nextProfileId = event.target.value;
 		const nextProfile = myTutorProfiles.find(
-			(profile) => profile._id === nextProfileId,
+			(profile) => profile._id === nextProfileId
 		);
-
 		setSelectedProfileId(nextProfileId);
 		setAvailability(nextProfile?.availability || []);
 		resetSlotForm();
@@ -232,9 +216,7 @@ function TutorDashboard() {
 		}
 
 		if (endMinutes - startMinutes < slot.sessionLengthMinutes) {
-			warnAlert(
-				"Session length cannot be longer than the selected time range.",
-			);
+			warnAlert("Session length cannot be longer than the selected time range.");
 			return;
 		}
 
@@ -244,7 +226,7 @@ function TutorDashboard() {
 				existingSlot.startTime === slot.startTime &&
 				existingSlot.endTime === slot.endTime &&
 				existingSlot.sessionLengthMinutes === slot.sessionLengthMinutes &&
-				index !== editingIndex,
+				index !== editingIndex
 		);
 
 		if (duplicateExists) {
@@ -254,7 +236,7 @@ function TutorDashboard() {
 
 		if (editingIndex !== null) {
 			setAvailability((prev) =>
-				prev.map((item, index) => (index === editingIndex ? slot : item)),
+				prev.map((item, index) => (index === editingIndex ? slot : item))
 			);
 		} else {
 			setAvailability((prev) => [...prev, slot]);
@@ -285,12 +267,9 @@ function TutorDashboard() {
 
 	const handleRemoveAvailability = (indexToRemove) => {
 		setAvailability((prev) =>
-			prev.filter((_, index) => index !== indexToRemove),
+			prev.filter((_, index) => index !== indexToRemove)
 		);
-
-		if (editingIndex === indexToRemove) {
-			resetSlotForm();
-		}
+		if (editingIndex === indexToRemove) resetSlotForm();
 	};
 
 	const handleSaveAvailability = async () => {
@@ -312,420 +291,385 @@ function TutorDashboard() {
 
 	return (
 		<Layout
-			page='Tutor'
-			title='Tutor Dashboard'
-			subtitle='Manage your tutor profile, availability, and student bookings.'
+			page="Tutor"
+			title="Tutor Dashboard"
+			subtitle="Manage your tutor profile, availability, and student bookings."
 			headerAction={
-				<div
-					style={{
-						display: "flex",
-						gap: "12px",
-						flexWrap: "wrap",
-					}}>
-					<button
-						type='button'
-						className='secondary-btn'
+				<div className="flex flex-wrap gap-3">
+					<Button
+						variant="outline"
 						onClick={() =>
 							navigate("/tutor/tutor-apply", {
 								state: { openNewApplication: true },
 							})
 						}>
 						Apply for Another Course
-					</button>
-					<button
-						type='button'
-						className='primary-btn'
-						onClick={handleOpenAvailabilityModal}>
+					</Button>
+					<Button onClick={handleOpenAvailabilityModal}>
 						{myTutorProfile ? "Update Availability" : "Apply as Tutor"}
-					</button>
+					</Button>
 				</div>
 			}>
-			<section className='stats-grid'>
+			<section className="mb-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
 				<StatCard
-					title='Approval Status'
+					title="Approval Status"
 					value={
 						myTutorProfiles.length > 0 ? "Approved" : "Pending / Not Approved"
 					}
-					subtitle='Admin controlled'
+					subtitle="Admin controlled"
 				/>
 				<StatCard
-					title='My Sessions'
+					title="My Sessions"
 					value={mySessions.length}
-					subtitle='Booked by students'
+					subtitle="Booked by students"
 				/>
 				<StatCard
-					title='Open Session Slots'
+					title="Open Session Slots"
 					value={totalOpenAvailabilitySlots}
-					subtitle='Currently bookable'
+					subtitle="Currently bookable"
 				/>
 			</section>
 
-			<section className='dashboard-panel enhanced-panel'>
-				<h2>My Tutor Status</h2>
-				{myTutorProfiles.length > 0 ? (
-					myTutorProfiles.map((profile) => {
-						const profileBookedLabels = new Set(
-							(profile.bookedSlots || []).map((slot) => slot.label),
-						);
-						const profileOpenSlots = (profile.availability || []).flatMap(
-							(slot) => {
-								const startMinutes = convertTimeToMinutes(slot.startTime);
-								const endMinutes = convertTimeToMinutes(slot.endTime);
-								const sessionLength = Number(slot.sessionLengthMinutes || 60);
-								const nextDate = getNextDateForDay(slot.day, slot.startTime);
-								const readableDate = nextDate.toLocaleDateString(undefined, {
-									weekday: "short",
-									month: "short",
-									day: "numeric",
-								});
-								const slots = [];
-
-								for (
-									let current = startMinutes;
-									current + sessionLength <= endMinutes;
-									current += sessionLength
-								) {
-									const sessionStart = convertMinutesToTime(current);
-									const sessionEnd = convertMinutesToTime(
-										current + sessionLength,
-									);
-									const label = `${slot.day} - ${sessionStart} to ${sessionEnd}`;
-
-									if (!profileBookedLabels.has(label)) {
-										slots.push({
-											label,
-											readableDate,
-											startTime: sessionStart,
-											endTime: sessionEnd,
-										});
+			<Card className="mb-6">
+				<CardContent className="p-6">
+					<h2 className="mb-4 text-lg font-bold text-slate-900">
+						My Tutor Status
+					</h2>
+					{myTutorProfiles.length > 0 ? (
+						myTutorProfiles.map((profile) => {
+							const profileBookedLabels = new Set(
+								(profile.bookedSlots || []).map((slot) => slot.label)
+							);
+							const profileOpenSlots = (profile.availability || []).flatMap(
+								(slot) => {
+									const startMinutes = convertTimeToMinutes(slot.startTime);
+									const endMinutes = convertTimeToMinutes(slot.endTime);
+									const sessionLength = Number(slot.sessionLengthMinutes || 60);
+									const nextDate = getNextDateForDay(slot.day, slot.startTime);
+									const readableDate = nextDate.toLocaleDateString(undefined, {
+										weekday: "short",
+										month: "short",
+										day: "numeric",
+									});
+									const slots = [];
+									for (
+										let current = startMinutes;
+										current + sessionLength <= endMinutes;
+										current += sessionLength
+									) {
+										const sessionStart = convertMinutesToTime(current);
+										const sessionEnd = convertMinutesToTime(
+											current + sessionLength
+										);
+										const label = `${slot.day} - ${sessionStart} to ${sessionEnd}`;
+										if (!profileBookedLabels.has(label)) {
+											slots.push({
+												label,
+												readableDate,
+												startTime: sessionStart,
+												endTime: sessionEnd,
+											});
+										}
 									}
+									return slots;
 								}
+							);
 
-								return slots;
-							},
-						);
+							return (
+								<div
+									key={profile._id}
+									className="mb-4 rounded-xl border border-slate-200 bg-slate-50/50 p-5 last:mb-0">
+									<p className="mb-1 text-sm text-slate-700">
+										<strong className="text-slate-900">Course:</strong>{" "}
+										{profile.course}
+									</p>
+									<p className="mb-3 text-sm text-slate-700">
+										<strong className="text-slate-900">Bio:</strong> {profile.bio}
+									</p>
 
-						return (
-							<div
-								key={profile._id}
-								className='dashboard-panel'
-								style={{ marginBottom: "16px" }}>
-								<p>
-									<strong>Course:</strong> {profile.course}
-								</p>
-								<p>
-									<strong>Bio:</strong> {profile.bio}
-								</p>
-								<div className='slot-section'>
-									<strong>Availability Windows</strong>
-									{profile.availability.length === 0 ? (
-										<p className='muted-text'>
-											No active slots. Update your availability.
-										</p>
-									) : (
-										<ul className='slot-list'>
-											{profile.availability.map((slot, index) => (
-												<li key={`${profile._id}-${index}`}>
-													{formatAvailabilitySlot(slot)} •{" "}
-													{getWindowSlotCount(slot)} bookable session
-													{getWindowSlotCount(slot) === 1 ? "" : "s"}
-												</li>
-											))}
-										</ul>
-									)}
+									<div className="mt-3">
+										<strong className="text-sm font-semibold text-slate-900">
+											Availability Windows
+										</strong>
+										{profile.availability.length === 0 ? (
+											<p className="mt-1 text-sm text-slate-500">
+												No active slots. Update your availability.
+											</p>
+										) : (
+											<ul className="mt-2 list-disc space-y-1 pl-6 text-sm text-slate-600">
+												{profile.availability.map((slot, index) => (
+													<li key={`${profile._id}-${index}`}>
+														{formatAvailabilitySlot(slot)} •{" "}
+														{getWindowSlotCount(slot)} bookable session
+														{getWindowSlotCount(slot) === 1 ? "" : "s"}
+													</li>
+												))}
+											</ul>
+										)}
+									</div>
+
+									<div className="mt-3">
+										<strong className="text-sm font-semibold text-slate-900">
+											Next 5 Open Session Slots
+										</strong>
+										{profileOpenSlots.length === 0 ? (
+											<p className="mt-1 text-sm text-slate-500">
+												All currently generated slots are booked.
+											</p>
+										) : (
+											<ul className="mt-2 list-disc space-y-1 pl-6 text-sm text-slate-600">
+												{profileOpenSlots.slice(0, 5).map((slot) => (
+													<li key={slot.label}>
+														{slot.readableDate}: {slot.startTime} -{" "}
+														{slot.endTime}
+													</li>
+												))}
+											</ul>
+										)}
+									</div>
+
+									<Button
+										variant="outline"
+										className="mt-4"
+										onClick={() => {
+											setSelectedProfileId(profile._id);
+											setAvailability(profile.availability || []);
+											resetSlotForm();
+											setIsAvailabilityModalOpen(true);
+										}}>
+										Update Availability for {profile.course}
+									</Button>
 								</div>
+							);
+						})
+					) : (
+						<div className="flex flex-col items-start gap-3">
+							<p className="text-sm text-slate-600">
+								You are not approved yet. Submit your tutor application first.
+							</p>
+							<Button onClick={() => navigate("/student/tutor-apply")}>
+								Go to Tutor Application
+							</Button>
+						</div>
+					)}
+				</CardContent>
+			</Card>
 
-								<div className='slot-section'>
-									<strong>Next 5 Open Session Slots</strong>
-									{profileOpenSlots.length === 0 ? (
-										<p className='muted-text'>
-											All currently generated slots are booked.
-										</p>
-									) : (
-										<ul className='slot-list'>
-											{profileOpenSlots.slice(0, 5).map((slot) => (
-												<li key={slot.label}>
-													{slot.readableDate}: {slot.startTime} - {slot.endTime}
-												</li>
-											))}
-										</ul>
-									)}
-								</div>
-
-								<button
-									type='button'
-									className='secondary-btn'
-									onClick={() => {
-										setSelectedProfileId(profile._id);
-										setAvailability(profile.availability || []);
-										resetSlotForm();
-										setIsAvailabilityModalOpen(true);
-									}}>
-									Update Availability for {profile.course}
-								</button>
-							</div>
-						);
-					})
-				) : (
-					<div className='empty-inline-state'>
-						<p>
-							You are not approved yet. Submit your tutor application first.
-						</p>
-						<button
-							className='primary-btn'
-							onClick={() => navigate("/student/tutor-apply")}>
-							Go to Tutor Application
-						</button>
-					</div>
-				)}
-			</section>
-
-			<section className='dashboard-panel enhanced-panel'>
-				<h2>My Next 5 Bookings</h2>
-				{isSessionsLoading ? (
-					<Loader />
-				) : upcomingSessions.length === 0 ? (
-					<EmptyState
-						title='No student bookings yet'
-						text='Booked sessions from students will appear here once they start scheduling with you.'
-					/>
-				) : (
-					upcomingSessions.map((session) => (
-						<SessionCard
-							key={session._id}
-							course={session.course}
-							tutor={`Student: ${session.student?.name || "Unknown"}`}
-							time={formatSessionTime(session)}
-							status={session.status || "pending"}
+			<Card className="mb-6">
+				<CardContent className="p-6">
+					<h2 className="mb-4 text-lg font-bold text-slate-900">
+						My Next 5 Bookings
+					</h2>
+					{isSessionsLoading ? (
+						<Loader />
+					) : upcomingSessions.length === 0 ? (
+						<EmptyState
+							title="No student bookings yet"
+							text="Booked sessions from students will appear here once they start scheduling with you."
 						/>
-					))
-				)}
-			</section>
+					) : (
+						upcomingSessions.map((session) => (
+							<SessionCard
+								key={session._id}
+								course={session.course}
+								tutor={`Student: ${session.student?.name || "Unknown"}`}
+								time={formatSessionTime(session)}
+								status={session.status || "pending"}
+							/>
+						))
+					)}
+				</CardContent>
+			</Card>
 
 			<Modal
 				isOpen={isAvailabilityModalOpen}
 				onClose={handleCloseAvailabilityModal}
-				title='Update Availability'
-				size='lg'>
-				<div className='booking-form'>
+				title="Update Availability"
+				size="lg">
+				<div className="flex flex-col gap-4">
 					<div>
-						<label>Availability Slots</label>
-						<p className='muted-text'>
+						<Label>Availability Slots</Label>
+						<p className="mt-1 text-sm text-slate-500">
 							Edit your availability windows and session lengths below.
 						</p>
 					</div>
 
 					{myTutorProfiles.length > 1 ? (
-						<>
-							<label>Course</label>
+						<div className="flex flex-col gap-1.5">
+							<Label>Course</Label>
 							<select
 								value={selectedProfileId}
-								onChange={handleProfileSelection}>
+								onChange={handleProfileSelection}
+								className={selectClass}>
 								{myTutorProfiles.map((profile) => (
-									<option
-										key={profile._id}
-										value={profile._id}>
+									<option key={profile._id} value={profile._id}>
 										{profile.course}
 									</option>
 								))}
 							</select>
-						</>
+						</div>
 					) : null}
 
-					<label>Day Available</label>
-					<select
-						name='day'
-						value={slotForm.day}
-						onChange={handleSlotChange}>
-						<option value=''>Select day</option>
-						{DAYS.map((day) => (
-							<option
-								key={day}
-								value={day}>
-								{day}
-							</option>
-						))}
-					</select>
-
-					<label>Start Time</label>
-					<div className='action-grid'>
+					<div className="flex flex-col gap-1.5">
+						<Label>Day Available</Label>
 						<select
-							name='hour'
-							value={slotForm.hour}
-							onChange={handleSlotChange}>
-							<option value=''>Hour</option>
-							{HOURS.map((hour) => (
-								<option
-									key={hour}
-									value={hour}>
-									{hour}
-								</option>
-							))}
-						</select>
-						<select
-							name='minute'
-							value={slotForm.minute}
-							onChange={handleSlotChange}>
-							{MINUTES.map((minute) => (
-								<option
-									key={minute}
-									value={minute}>
-									{minute}
-								</option>
-							))}
-						</select>
-						<select
-							name='period'
-							value={slotForm.period}
-							onChange={handleSlotChange}>
-							{PERIODS.map((period) => (
-								<option
-									key={period}
-									value={period}>
-									{period}
+							name="day"
+							value={slotForm.day}
+							onChange={handleSlotChange}
+							className={selectClass}>
+							<option value="">Select day</option>
+							{DAYS.map((day) => (
+								<option key={day} value={day}>
+									{day}
 								</option>
 							))}
 						</select>
 					</div>
 
-					<label>End Time</label>
-					<div className='action-grid'>
+					<div className="flex flex-col gap-1.5">
+						<Label>Start Time</Label>
+						<div className="grid grid-cols-3 gap-2">
+							<select
+								name="hour"
+								value={slotForm.hour}
+								onChange={handleSlotChange}
+								className={selectClass}>
+								<option value="">Hour</option>
+								{HOURS.map((h) => (
+									<option key={h} value={h}>
+										{h}
+									</option>
+								))}
+							</select>
+							<select
+								name="minute"
+								value={slotForm.minute}
+								onChange={handleSlotChange}
+								className={selectClass}>
+								{MINUTES.map((m) => (
+									<option key={m} value={m}>
+										{m}
+									</option>
+								))}
+							</select>
+							<select
+								name="period"
+								value={slotForm.period}
+								onChange={handleSlotChange}
+								className={selectClass}>
+								{PERIODS.map((p) => (
+									<option key={p} value={p}>
+										{p}
+									</option>
+								))}
+							</select>
+						</div>
+					</div>
+
+					<div className="flex flex-col gap-1.5">
+						<Label>End Time</Label>
+						<div className="grid grid-cols-3 gap-2">
+							<select
+								name="endHour"
+								value={slotForm.endHour}
+								onChange={handleSlotChange}
+								className={selectClass}>
+								<option value="">Hour</option>
+								{HOURS.map((h) => (
+									<option key={h} value={h}>
+										{h}
+									</option>
+								))}
+							</select>
+							<select
+								name="endMinute"
+								value={slotForm.endMinute}
+								onChange={handleSlotChange}
+								className={selectClass}>
+								{MINUTES.map((m) => (
+									<option key={m} value={m}>
+										{m}
+									</option>
+								))}
+							</select>
+							<select
+								name="endPeriod"
+								value={slotForm.endPeriod}
+								onChange={handleSlotChange}
+								className={selectClass}>
+								{PERIODS.map((p) => (
+									<option key={p} value={p}>
+										{p}
+									</option>
+								))}
+							</select>
+						</div>
+					</div>
+
+					<div className="flex flex-col gap-1.5">
+						<Label>Session Length</Label>
 						<select
-							name='endHour'
-							value={slotForm.endHour}
-							onChange={handleSlotChange}>
-							<option value=''>Hour</option>
-							{HOURS.map((hour) => (
-								<option
-									key={hour}
-									value={hour}>
-									{hour}
-								</option>
-							))}
-						</select>
-						<select
-							name='endMinute'
-							value={slotForm.endMinute}
-							onChange={handleSlotChange}>
-							{MINUTES.map((minute) => (
-								<option
-									key={minute}
-									value={minute}>
-									{minute}
-								</option>
-							))}
-						</select>
-						<select
-							name='endPeriod'
-							value={slotForm.endPeriod}
-							onChange={handleSlotChange}>
-							{PERIODS.map((period) => (
-								<option
-									key={period}
-									value={period}>
-									{period}
-								</option>
-							))}
+							name="sessionLengthMinutes"
+							value={slotForm.sessionLengthMinutes}
+							onChange={handleSlotChange}
+							className={selectClass}>
+							<option value="30">30 minutes</option>
+							<option value="45">45 minutes</option>
+							<option value="60">60 minutes</option>
+							<option value="90">90 minutes</option>
+							<option value="120">120 minutes</option>
 						</select>
 					</div>
 
-					<label>Session Length</label>
-					<select
-						name='sessionLengthMinutes'
-						value={slotForm.sessionLengthMinutes}
-						onChange={handleSlotChange}>
-						<option value='30'>30 minutes</option>
-						<option value='45'>45 minutes</option>
-						<option value='60'>60 minutes</option>
-						<option value='90'>90 minutes</option>
-						<option value='120'>120 minutes</option>
-					</select>
-
-					<div className='booking-form-actions'>
-						<button
-							type='button'
-							className='primary-btn'
-							onClick={handleAddAvailability}>
+					<div className="flex flex-wrap gap-2">
+						<Button onClick={handleAddAvailability}>
 							{editingIndex !== null ? "Save Slot" : "Add Availability Slot"}
-						</button>
+						</Button>
 						{editingIndex !== null ? (
-							<button
-								type='button'
-								className='secondary-btn'
-								onClick={resetSlotForm}>
+							<Button variant="outline" onClick={resetSlotForm}>
 								Cancel Edit
-							</button>
+							</Button>
 						) : null}
 					</div>
 
 					{availability.length === 0 ? (
-						<p className='muted-text'>No availability added yet.</p>
+						<p className="text-sm text-slate-500">No availability added yet.</p>
 					) : (
-						<div style={{ marginBottom: "16px" }}>
+						<div className="flex flex-col gap-2">
 							{availability.map((slot, index) => (
 								<div
 									key={`${slot.day}-${slot.startTime}-${slot.endTime}-${index}`}
-									style={{
-										display: "flex",
-										justifyContent: "space-between",
-										alignItems: "center",
-										marginBottom: "8px",
-										padding: "10px 12px",
-										border: "1px solid #ddd",
-										borderRadius: "8px",
-										gap: "12px",
-										flexWrap: "wrap",
-									}}>
-									<span>{formatAvailabilitySlot(slot)}</span>
-
-									<div style={{ display: "flex", gap: "8px" }}>
-										<button
-											type='button'
-											onClick={() => handleEditAvailability(index)}
-											style={{
-												backgroundColor: "#2563eb",
-												color: "#fff",
-												border: "none",
-												padding: "8px 12px",
-												borderRadius: "6px",
-												cursor: "pointer",
-											}}>
+									className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2.5">
+									<span className="text-sm text-slate-700">
+										{formatAvailabilitySlot(slot)}
+									</span>
+									<div className="flex gap-2">
+										<Button
+											size="sm"
+											onClick={() => handleEditAvailability(index)}>
 											Edit
-										</button>
-
-										<button
-											type='button'
-											onClick={() => handleRemoveAvailability(index)}
-											style={{
-												backgroundColor: "#dc2626",
-												color: "#fff",
-												border: "none",
-												padding: "8px 12px",
-												borderRadius: "6px",
-												cursor: "pointer",
-											}}>
+										</Button>
+										<Button
+											size="sm"
+											variant="destructive"
+											onClick={() => handleRemoveAvailability(index)}>
 											Remove
-										</button>
+										</Button>
 									</div>
 								</div>
 							))}
 						</div>
 					)}
 
-					<div className='booking-form-actions'>
-						<button
-							type='button'
-							className='secondary-btn'
-							onClick={handleCloseAvailabilityModal}>
+					<div className="flex flex-wrap justify-end gap-2 pt-2">
+						<Button variant="outline" onClick={handleCloseAvailabilityModal}>
 							Cancel
-						</button>
-						<button
-							type='button'
-							className='primary-btn'
+						</Button>
+						<Button
 							onClick={handleSaveAvailability}
 							disabled={isUpdatingAvailability}>
 							{isUpdatingAvailability ? "Saving..." : "Save Availability"}
-						</button>
+						</Button>
 					</div>
 				</div>
 			</Modal>
