@@ -12,7 +12,7 @@ import { convertTimeToMinutes } from "../utils/functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import Swal from "sweetalert2";
+import { useConfirm } from "@/components/ConfirmProvider";
 
 const STATUS_VARIANTS = {
 	booked: "bg-blue-100 text-blue-800",
@@ -48,7 +48,7 @@ function Sessions() {
 	const [pendingDecision, setPendingDecision] = useState(null);
 	const location = useLocation();
 	const navigate = useNavigate();
-
+	const confirm = useConfirm();
 	const requestedTutorId = location.state?.tutorId || "";
 
 	const sidebarRole =
@@ -209,7 +209,7 @@ function Sessions() {
 										type='button'
 										variant='outline'
 										size='sm'
-										onClick={() => handleLeaveReview(session)}>
+										onClick={() => setReviewTarget(session)}>
 										Leave review
 									</Button>
 								);
@@ -246,8 +246,15 @@ function Sessions() {
 		}
 	};
 
-	const handleDecision = (status) => {
+	const handleDecision = async (status) => {
 		if (!pendingDecision) return;
+		const ok = await confirm({
+			title: "Submit Decision",
+			description: "This will submit your decision for this session. Continue?",
+			confirmText: "Yes, submit",
+			variant: "default",
+		});
+		if (!ok) return;
 		updateStatus(
 			{ bookingId: pendingDecision._id, status },
 			{ onSuccess: () => setPendingDecision(null) },
