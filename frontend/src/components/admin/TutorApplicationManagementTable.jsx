@@ -5,7 +5,10 @@ import { useConfirm } from "../ConfirmProvider";
 import {
 	useUpdateTutorApplication,
 	useRescoreTutorApplication,
+	useSuggestAdminNotes,
+	usePolishAdminNote,
 } from "../../hooks/tutorApplication";
+import { errorAlert } from "../../utils";
 import { useDeleteTutor } from "../../hooks/tutor";
 import { useDeleteUserAccount } from "../../hooks/user";
 import { Button } from "@/components/ui/button";
@@ -44,6 +47,11 @@ function TutorApplicationManagementTable({
 		useUpdateTutorApplication();
 	const { mutateAsync: rescoreApplication, isPending: isRescoring } =
 		useRescoreTutorApplication();
+	const { mutateAsync: suggestNotes, isPending: isSuggesting } =
+		useSuggestAdminNotes();
+	const { mutateAsync: polishNote, isPending: isPolishing } =
+		usePolishAdminNote();
+	const [suggestedNotes, setSuggestedNotes] = useState([]);
 	const { mutateAsync: deleteTutor, isPending: isDeletingTutor } =
 		useDeleteTutor();
 	const { mutateAsync: deleteUserAccount, isPending: isDeletingUser } =
@@ -56,8 +64,48 @@ function TutorApplicationManagementTable({
 
 	const isActionPending = isPending || isDeletingTutor || isDeletingUser;
 
-	const handleOpenRequest = (application) => setSelectedApplication(application);
-	const handleCloseRequest = () => setSelectedApplication(null);
+	const handleOpenRequest = (application) => {
+		setSuggestedNotes([]);
+		setSelectedApplication(application);
+	};
+	const handleCloseRequest = () => {
+		setSuggestedNotes([]);
+		setSelectedApplication(null);
+	};
+
+	const handleSuggestNotes = async () => {
+		if (!selectedApplication) return;
+		try {
+			const result = await suggestNotes(selectedApplication._id);
+			setSuggestedNotes(result?.suggestions || []);
+		} catch {
+			/* errorAlert handled in hook */
+		}
+	};
+
+	const handlePolishNote = async () => {
+		if (!selectedApplication) return;
+		const current = (
+			adminNotesById[selectedApplication._id] ??
+			selectedApplication.adminNotes ??
+			""
+		).trim();
+		if (!current) {
+			errorAlert("Type a draft before polishing");
+			return;
+		}
+		try {
+			const result = await polishNote({
+				applicationId: selectedApplication._id,
+				draft: current,
+			});
+			if (result?.polished) {
+				handleNotesChange(selectedApplication._id, result.polished);
+			}
+		} catch {
+			/* errorAlert handled in hook */
+		}
+	};
 
 	const handleNotesChange = (applicationId, value) => {
 		setAdminNotesById((prev) => ({ ...prev, [applicationId]: value }));
@@ -321,7 +369,53 @@ function TutorApplicationManagementTable({
 						</div>
 
 						<div className="flex flex-col gap-1.5">
-							<Label>Comments</Label>
+							<div className="flex items-center justify-between gap-2">
+								<Label>Comments</Label>
+								<div className="flex gap-2">
+									{["reject", "needs_review"].includes(
+										selectedApplication.aiScore?.recommendation,
+									) ? (
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											onClick={handleSuggestNotes}
+											disabled={isSuggesting}>
+											{isSuggesting
+												? "Generating..."
+												: suggestedNotes.length
+													? "Regenerate"
+													: "Suggest notes"}
+										</Button>
+									) : null}
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										onClick={handlePolishNote}
+										disabled={isPolishing}>
+										{isPolishing ? "Polishing..." : "Polish with AI"}
+									</Button>
+								</div>
+							</div>
+							{suggestedNotes.length > 0 ? (
+								<div className="flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-2">
+									<p className="text-xs text-slate-500">
+										Click a suggestion to use it
+									</p>
+									{suggestedNotes.map((note, idx) => (
+										<button
+											key={idx}
+											type="button"
+											onClick={() =>
+												handleNotesChange(selectedApplication._id, note)
+											}
+											className="rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-sm text-slate-700 hover:border-blue-400 hover:bg-blue-50">
+											{note}
+										</button>
+									))}
+								</div>
+							) : null}
 							<textarea
 								className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
 								value={

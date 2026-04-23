@@ -72,6 +72,19 @@ const rescoreTutorApplication = async (applicationId) => {
 	return data?.data;
 };
 
+const generateAdminNotes = async ({ applicationId, mode, draft }) => {
+	const { data } = await axiosInstance({
+		url: `/tutor-application/${applicationId}/admin-notes`,
+		method: "POST",
+		data: { mode, draft },
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
+
+	return data?.data;
+};
+
 const updateMyTutorAvailability = async ({ applicationId, availability }) => {
 	const { data } = await axiosInstance({
 		url: "/tutor-application/availability",
@@ -166,6 +179,32 @@ export function useRescoreTutorApplication() {
 					queryKey: [queryKeys.tutorApplication],
 				});
 			},
+			onError: (mutationError) => {
+				errorAlert(mutationError);
+			},
+		});
+
+	return { mutate, mutateAsync, reset, isPending, isSuccess, isError, error };
+}
+
+export function useSuggestAdminNotes() {
+	const { mutate, mutateAsync, reset, isPending, isSuccess, isError, error } =
+		useMutation({
+			mutationFn: (applicationId) =>
+				generateAdminNotes({ applicationId, mode: "suggest" }),
+			onError: (mutationError) => {
+				errorAlert(mutationError);
+			},
+		});
+
+	return { mutate, mutateAsync, reset, isPending, isSuccess, isError, error };
+}
+
+export function usePolishAdminNote() {
+	const { mutate, mutateAsync, reset, isPending, isSuccess, isError, error } =
+		useMutation({
+			mutationFn: ({ applicationId, draft }) =>
+				generateAdminNotes({ applicationId, mode: "polish", draft }),
 			onError: (mutationError) => {
 				errorAlert(mutationError);
 			},

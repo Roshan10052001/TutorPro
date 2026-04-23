@@ -129,4 +129,101 @@ async function scoreApplication(application) {
 	}
 }
 
-module.exports = { scoreApplication };
+const SUGGEST_NOTES_SYSTEM_PROMPT = `You draft short, professional notes that an admin would leave on a tutor application. Tone: polite, specific, constructive. Length: 1–2 sentences each, under 280 characters. Reference the specific weaknesses provided, but do not invent facts.
+
+Output ONLY a JSON object with this exact schema, no prose, no markdown fences:
+{
+  "suggestions": [string, string, string]
+}`;
+
+const POLISH_SYSTEM_PROMPT = `Rewrite the admin's draft to be professional, clear, and courteous while preserving the admin's intent, facts, and decision. Do not add new facts, new reasons, or new promises. Keep it concise (<=280 characters).
+
+Output ONLY a JSON object with this exact schema, no prose, no markdown fences:
+{
+  "polished": string
+}`;
+
+function buildSuggestUserMessage(application) {
+	const reasons = (application.aiScore?.reasons || []).join("; ") || "(none)";
+	const recommendation = application.aiScore?.recommendation || "unknown";
+
+	return `Application context:
+Course: ${application.course}
+Bio: ${application.bio}
+AI recommendation: ${recommendation}
+AI reasons: ${reasons}
+
+Write 3 short admin notes the admin could use as-is or adapt. Return JSON now.`;
+}
+
+function buildPolishUserMessage(application, draft) {
+	return `Application context:
+Course: ${application.course}
+Applicant: ${application.name}
+
+Admin draft to rewrite:
+"""
+${draft}
+"""
+
+Return JSON now.`;
+}
+
+async function callModel({ system, userMessage, maxTokens }) {
+	if (!process.env.ANTHROPIC_API_KEY) {
+		throw new Error("ANTHROPIC_API_KEY not configured");
+	}
+	const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+	const response = await client.messages.create({
+		model: MODEL,
+		max_tokens: maxTokens,
+		system: [
+			{
+				type: "text",
+				text: system,
+				cache_control: { type: "ephemeral" },
+			},
+		],
+		messages: [{ role: "user", content: userMessage }],
+	});
+	const text = extractText(response);
+	const jsonMatch = text.match(/\{[\s\S]*\}/);
+	if (!jsonMatch) throw new Error("No JSON object found in response");
+	return JSON.parse(jsonMatch[0]);
+}
+
+async function generateNoteSuggestions(application) {
+	try {
+		const parsed = await callModel({
+			system: SUGGEST_NOTES_SYSTEM_PROMPT,
+			userMessage: buildSuggestUserMessage(application),
+			maxTokens: 500,
+		});
+		if (!Array.isArray(parsed.suggestions) || parsed.suggestions.length === 0) {
+			throw new Error("suggestions must be a non-empty array");
+		}
+		return {
+			suggestions: parsed.suggestions.slice(0, 3).map((s) => String(s).trim()),
+		};
+	} catch (err) {
+		return { error: err.message || "Unknown suggestion error" };
+	}
+}
+
+async function polishNote(application, draft) {
+	try {
+		const parsed = await callModel({
+			system: POLISH_SYSTEM_PROMPT,
+			userMessage: buildPolishUserMessage(application, draft),
+			maxTokens: 400,
+		});
+		if (typeof parsed.polished !== "string" || !parsed.polished.trim()) {
+			throw new Error("polished must be a non-empty string");
+		}
+		return { polished: parsed.polished.trim() };
+	} catch (err) {
+		return { error: err.message || "Unknown polish error" };
+	}
+}
+
+module.exports = { scoreApplication, generateNoteSuggestions, polishNote };
