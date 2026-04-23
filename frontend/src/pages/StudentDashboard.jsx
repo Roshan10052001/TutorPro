@@ -60,7 +60,7 @@ function StudentDashboard() {
 			day: "numeric",
 			year: "numeric",
 		});
-		return `${readableDate} • ${session.startTime} - ${session.endTime}`;
+		return `${readableDate} - ${session.startTime} - ${session.endTime}`;
 	};
 
 	return (
@@ -77,20 +77,25 @@ function StudentDashboard() {
 					title="Approved Tutors"
 					value={approvedTutors.length}
 					subtitle="Available to book"
+					tone="blue"
+					icon="academics"
 				/>
 				<StatCard
 					title="My Sessions"
 					value={studentSessions.length}
 					subtitle="Current bookings"
+					icon="schedule"
 				/>
 				<StatCard
 					title="Open Booking Flow"
 					value="Active"
 					subtitle="Tutor slot based"
+					tone="indigo"
+					icon="trust"
 				/>
 			</section>
 
-			<Card className="mb-6">
+			<Card className="mb-6 border-white/70 bg-white/80 shadow-lg shadow-slate-200/60 backdrop-blur">
 				<CardContent className="p-6">
 					<h2 className="mb-4 text-lg font-bold text-slate-900">
 						My Upcoming Sessions
@@ -116,7 +121,7 @@ function StudentDashboard() {
 				</CardContent>
 			</Card>
 
-			<Card>
+			<Card className="border-white/70 bg-white/80 shadow-lg shadow-slate-200/60 backdrop-blur">
 				<CardContent className="p-6">
 					<h2 className="mb-4 text-lg font-bold text-slate-900">
 						Quick Actions

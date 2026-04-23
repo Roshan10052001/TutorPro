@@ -14,6 +14,10 @@ const privateRoutes = [
 		element: lazy(() => import("../pages/Tutors")),
 	},
 	{
+		path: "tutors/:tutorId",
+		element: lazy(() => import("../pages/TutorDetail")),
+	},
+	{
 		path: "tutor-apply",
 		element: lazy(() => import("../pages/TutorApply")),
 	},
@@ -24,10 +28,6 @@ const privateRoutes = [
 	{
 		path: "sessions",
 		element: lazy(() => import("../pages/Sessions")),
-	},
-	{
-		path: "profile",
-		element: lazy(() => import("../pages/Profile")),
 	},
 ];
 
