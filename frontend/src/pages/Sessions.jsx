@@ -12,6 +12,7 @@ import { convertTimeToMinutes } from "../utils/functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import Swal from "sweetalert2";
 
 const STATUS_VARIANTS = {
 	booked: "bg-blue-100 text-blue-800",
@@ -206,7 +207,7 @@ function Sessions() {
 										type="button"
 										variant="outline"
 										size="sm"
-										onClick={() => setReviewTarget(session)}>
+										onClick={() => handleLeaveReview(session)}>
 										Leave review
 									</Button>
 								);
@@ -249,6 +250,22 @@ function Sessions() {
 			{ bookingId: pendingDecision._id, status },
 			{ onSuccess: () => setPendingDecision(null) },
 		);
+	};
+
+	const handleLeaveReview = (session) => {
+		Swal.fire({
+			title: "Leave a Review",
+			text: "Are you sure you want to leave a review for this session?",
+			icon: "question",
+			showCancelButton: true,
+			confirmButtonText: "Yes",
+			cancelButtonText: "Cancel",
+			reverseButtons: true,
+		}).then((result) => {
+			if (result.isConfirmed) {
+				setReviewTarget(session);
+			}
+		});
 	};
 
 	useEffect(() => {

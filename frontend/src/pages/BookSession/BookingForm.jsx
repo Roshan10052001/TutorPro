@@ -8,8 +8,8 @@ import {
 	getNextDateForDay,
 } from "../../utils/functions";
 import { AuthContext } from "../../context";
-import { useConfirm } from "../../components/ConfirmProvider";
 import { errorAlert, warnAlert } from "../../utils";
+import Swal from "sweetalert2";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +26,6 @@ function BookingForm({ onSuccess, onCancel, initialTutorId = "" }) {
 	const { data: tutors = [] } = useGetTutors();
 	const approvedTutors = tutors.filter((tutor) => tutor.status === "approved");
 	const { mutateAsync: bookSession, isPending } = useCreateBooking();
-	const confirm = useConfirm();
 
 	const [formData, setFormData] = useState({
 		tutor: "",
@@ -159,11 +158,17 @@ function BookingForm({ onSuccess, onCancel, initialTutorId = "" }) {
 			selectedSlot.startTime
 		);
 
-		const ok = await confirm({
+		const result = await Swal.fire({
 			title: "Confirmation",
-			description: "Are you sure you want to book this session?",
+			text: "Are you sure you want to book this session?",
+			icon: "question",
+			showCancelButton: true,
+			confirmButtonText: "Yes",
+			cancelButtonText: "Cancel",
+			reverseButtons: true,
 		});
-		if (!ok) return;
+
+		if (!result.isConfirmed) return;
 
 		try {
 			await bookSession({
