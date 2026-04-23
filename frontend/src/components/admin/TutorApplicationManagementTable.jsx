@@ -2,7 +2,10 @@ import { useState } from "react";
 import DataTable from "../DataTable";
 import Modal from "../Modal";
 import { useConfirm } from "../ConfirmProvider";
-import { useUpdateTutorApplication } from "../../hooks/tutorApplication";
+import {
+	useUpdateTutorApplication,
+	useRescoreTutorApplication,
+} from "../../hooks/tutorApplication";
 import { useDeleteTutor } from "../../hooks/tutor";
 import { useDeleteUserAccount } from "../../hooks/user";
 import { Button } from "@/components/ui/button";
@@ -17,6 +20,18 @@ const STATUS_VARIANTS = {
 	rejected: "bg-rose-100 text-rose-800",
 };
 
+const AI_RECOMMENDATION_VARIANTS = {
+	approve: "bg-emerald-100 text-emerald-800",
+	reject: "bg-rose-100 text-rose-800",
+	needs_review: "bg-amber-100 text-amber-800",
+};
+
+const AI_RECOMMENDATION_LABELS = {
+	approve: "Approve",
+	reject: "Reject",
+	needs_review: "Needs review",
+};
+
 function TutorApplicationManagementTable({
 	applications = [],
 	isLoading = false,
@@ -27,6 +42,8 @@ function TutorApplicationManagementTable({
 }) {
 	const { mutateAsync: updateTutorApplication, isPending } =
 		useUpdateTutorApplication();
+	const { mutateAsync: rescoreApplication, isPending: isRescoring } =
+		useRescoreTutorApplication();
 	const { mutateAsync: deleteTutor, isPending: isDeletingTutor } =
 		useDeleteTutor();
 	const { mutateAsync: deleteUserAccount, isPending: isDeletingUser } =
@@ -232,6 +249,75 @@ function TutorApplicationManagementTable({
 									</li>
 								))}
 							</ul>
+						</div>
+
+						<div className="flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+							<div className="flex items-center justify-between gap-2">
+								<div>
+									<Label className="text-sm font-semibold">AI Recommendation</Label>
+									<p className="text-xs text-slate-500">
+										Advisory — admin makes the final decision
+									</p>
+								</div>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									onClick={async () => {
+										const updated = await rescoreApplication(
+											selectedApplication._id,
+										);
+										if (updated) setSelectedApplication(updated);
+									}}
+									disabled={isRescoring}>
+									{isRescoring ? "Re-scoring..." : "Re-score"}
+								</Button>
+							</div>
+							{selectedApplication.aiScore?.error ? (
+								<p className="text-sm text-rose-700">
+									Scoring failed: {selectedApplication.aiScore.error}
+								</p>
+							) : selectedApplication.aiScore?.recommendation ? (
+								<>
+									<div className="flex items-center gap-2">
+										<Badge
+											className={
+												AI_RECOMMENDATION_VARIANTS[
+													selectedApplication.aiScore.recommendation
+												] || AI_RECOMMENDATION_VARIANTS.needs_review
+											}>
+											{AI_RECOMMENDATION_LABELS[
+												selectedApplication.aiScore.recommendation
+											] || selectedApplication.aiScore.recommendation}
+										</Badge>
+										<span className="text-sm text-slate-600">
+											{Math.round(
+												(selectedApplication.aiScore.confidence ?? 0) * 100,
+											)}
+											% confidence
+										</span>
+									</div>
+									{selectedApplication.aiScore.reasons?.length ? (
+										<ul className="list-inside list-disc text-sm text-slate-700">
+											{selectedApplication.aiScore.reasons
+												.slice(0, 5)
+												.map((reason, idx) => (
+													<li key={idx}>{reason}</li>
+												))}
+										</ul>
+									) : null}
+									{selectedApplication.aiScore.scoredAt ? (
+										<p className="text-xs text-slate-500">
+											Scored{" "}
+											{new Date(
+												selectedApplication.aiScore.scoredAt,
+											).toLocaleString()}
+										</p>
+									) : null}
+								</>
+							) : (
+								<p className="text-sm text-slate-500">Scoring in progress…</p>
+							)}
 						</div>
 
 						<div className="flex flex-col gap-1.5">
