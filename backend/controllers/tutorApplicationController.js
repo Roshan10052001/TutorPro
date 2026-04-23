@@ -2,6 +2,20 @@ const TutorApplication = require("../models/TutorApplication");
 const User = require("../models/User");
 const asyncHandler = require("../utils/asyncHandler");
 const ErrorResponse = require("../utils/errorResponse");
+const { scoreApplication } = require("../services/aiScoringService");
+
+function scoreInBackground(applicationId) {
+	TutorApplication.findById(applicationId)
+		.then(async (application) => {
+			if (!application) return;
+			const aiScore = await scoreApplication(application);
+			application.aiScore = aiScore;
+			await application.save();
+		})
+		.catch((err) => {
+			console.error("AI scoring failed:", err.message);
+		});
+}
 
 // @desc    Submit tutor application
 // @route   POST /api/v1/tutor-applications
@@ -37,7 +51,7 @@ exports.submitTutorApplication = asyncHandler(async (req, res, next) => {
 		);
 	}
 
-	await TutorApplication.create({
+	const application = await TutorApplication.create({
 		user: req.user._id,
 		name,
 		email,
@@ -46,9 +60,32 @@ exports.submitTutorApplication = asyncHandler(async (req, res, next) => {
 		bio,
 	});
 
+	scoreInBackground(application._id);
+
 	res.status(201).json({
 		success: true,
 		message: "Tutor application submitted successfully",
+	});
+});
+
+// @desc    Re-score tutor application with AI (admin only)
+// @route   POST /api/v1/tutor-applications/:id/score
+// @access  Private/Admin
+exports.rescoreTutorApplication = asyncHandler(async (req, res, next) => {
+	const application = await TutorApplication.findById(req.params.id);
+
+	if (!application) {
+		return next(new ErrorResponse("Tutor application not found", 404));
+	}
+
+	const aiScore = await scoreApplication(application);
+	application.aiScore = aiScore;
+	await application.save();
+
+	res.status(200).json({
+		success: true,
+		message: "Tutor application re-scored",
+		data: application,
 	});
 });
 

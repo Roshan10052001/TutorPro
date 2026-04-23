@@ -60,6 +60,18 @@ const updateTutorApplication = async ({
 	return data?.data;
 };
 
+const rescoreTutorApplication = async (applicationId) => {
+	const { data } = await axiosInstance({
+		url: `/tutor-application/${applicationId}/score`,
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
+
+	return data?.data;
+};
+
 const updateMyTutorAvailability = async ({ applicationId, availability }) => {
 	const { data } = await axiosInstance({
 		url: "/tutor-application/availability",
@@ -139,6 +151,27 @@ export function useUpdateTutorApplication() {
 		});
 
 	return { mutate, mutateAsync, isSuccess, isError, reset, error, isPending };
+}
+
+export function useRescoreTutorApplication() {
+	const { mutate, mutateAsync, reset, isPending, isSuccess, isError, error } =
+		useMutation({
+			mutationFn: rescoreTutorApplication,
+			onSuccess: () => {
+				successAlert("Application re-scored");
+				queryClient.invalidateQueries({
+					queryKey: [queryKeys.allTutorApplications],
+				});
+				queryClient.invalidateQueries({
+					queryKey: [queryKeys.tutorApplication],
+				});
+			},
+			onError: (mutationError) => {
+				errorAlert(mutationError);
+			},
+		});
+
+	return { mutate, mutateAsync, reset, isPending, isSuccess, isError, error };
 }
 
 export function useUpdateMyTutorAvailability() {
