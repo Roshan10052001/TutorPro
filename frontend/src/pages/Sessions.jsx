@@ -4,11 +4,15 @@ import Layout from "../components/Layout";
 import DataTable from "../components/DataTable";
 import Modal from "../components/Modal";
 import { AuthContext } from "../context";
-import { useGetBookings } from "../hooks/booking";
+import { useGetBookings, useUpdateBookingStatus } from "../hooks/booking";
+import { useGetMyReviews } from "../hooks/review";
+import ReviewDialog from "../components/ReviewDialog";
 import BookingForm from "./BookSession/BookingForm";
 import { convertTimeToMinutes } from "../utils/functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ConfirmProvider";
 
 const STATUS_VARIANTS = {
 	booked: "bg-blue-100 text-blue-800",
@@ -27,10 +31,24 @@ function Sessions() {
 			: {};
 	const { data: sessions = [], isPending: isSessionsLoading } =
 		useGetBookings(bookingParams);
+	const { data: myReviews = [] } = useGetMyReviews();
+	const { mutate: updateStatus, isPending: isUpdatingStatus } =
+		useUpdateBookingStatus();
+	const reviewedBookingIds = useMemo(
+		() =>
+			new Set(
+				(myReviews || [])
+					.map((review) => review.booking?.toString?.() || review.booking)
+					.filter(Boolean),
+			),
+		[myReviews],
+	);
 	const [isModalOpen, setIsModalOpen] = useState(false);
+	const [reviewTarget, setReviewTarget] = useState(null);
+	const [pendingDecision, setPendingDecision] = useState(null);
 	const location = useLocation();
 	const navigate = useNavigate();
-
+	const confirm = useConfirm();
 	const requestedTutorId = location.state?.tutorId || "";
 
 	const sidebarRole =
@@ -125,7 +143,7 @@ function Sessions() {
 					const s = session.status || "pending";
 					return (
 						<Badge
-							variant="secondary"
+							variant='secondary'
 							className={`font-semibold ${STATUS_VARIANTS[s] || ""}`}>
 							{s}
 						</Badge>
@@ -137,8 +155,70 @@ function Sessions() {
 				header: "Notes",
 				render: (session) => session.notes || "No notes",
 			},
+			...(effectiveRole === "tutor"
+				? [
+						{
+							key: "actions",
+							header: "Actions",
+							render: (session) => {
+								if (session.status === "pending") {
+									return (
+										<Button
+											type='button'
+											variant='outline'
+											size='sm'
+											onClick={() => setPendingDecision(session)}>
+											Review request
+										</Button>
+									);
+								}
+								if (session.status === "confirmed") {
+									return (
+										<Button
+											type='button'
+											size='sm'
+											disabled={isUpdatingStatus}
+											onClick={() =>
+												updateStatus({
+													bookingId: session._id,
+													status: "completed",
+												})
+											}>
+											Mark complete
+										</Button>
+									);
+								}
+								return "—";
+							},
+						},
+					]
+				: []),
+			...(effectiveRole === "student"
+				? [
+						{
+							key: "review",
+							header: "Review",
+							render: (session) => {
+								if (session.status !== "completed") return "—";
+								if (reviewedBookingIds.has(session._id))
+									return (
+										<span className='text-sm text-slate-500'>Reviewed</span>
+									);
+								return (
+									<Button
+										type='button'
+										variant='outline'
+										size='sm'
+										onClick={() => setReviewTarget(session)}>
+										Leave review
+									</Button>
+								);
+							},
+						},
+					]
+				: []),
 		],
-		[],
+		[effectiveRole, reviewedBookingIds, updateStatus, isUpdatingStatus],
 	);
 
 	const pageTitle =
@@ -166,6 +246,21 @@ function Sessions() {
 		}
 	};
 
+	const handleDecision = async (status) => {
+		if (!pendingDecision) return;
+		const ok = await confirm({
+			title: "Submit Decision",
+			description: "This will submit your decision for this session. Continue?",
+			confirmText: "Yes, submit",
+			variant: "default",
+		});
+		if (!ok) return;
+		updateStatus(
+			{ bookingId: pendingDecision._id, status },
+			{ onSuccess: () => setPendingDecision(null) },
+		);
+	};
+
 	useEffect(() => {
 		if (effectiveRole !== "student") return;
 		if (!location.state?.openBooking) return;
@@ -181,19 +276,21 @@ function Sessions() {
 			buttonText={effectiveRole === "student" ? "Book New Session" : undefined}
 			onButtonClick={effectiveRole === "student" ? handleOpenModal : undefined}>
 			<Card>
-				<CardContent className="p-6">
-					<h2 className="mb-4 text-lg font-bold text-slate-900">Session List</h2>
+				<CardContent className='p-6'>
+					<h2 className='mb-4 text-lg font-bold text-slate-900'>
+						Session List
+					</h2>
 					<DataTable
-					columns={columns}
-					data={sortedSessions}
-					isLoading={isSessionsLoading}
-					emptyTitle='No sessions yet'
-					emptyText={
-						effectiveRole === "student"
-							? 'Click "Book New Session" to schedule your first tutoring session.'
-							: "There are no sessions to show right now."
-					}
-				/>
+						columns={columns}
+						data={sortedSessions}
+						isLoading={isSessionsLoading}
+						emptyTitle='No sessions yet'
+						emptyText={
+							effectiveRole === "student"
+								? 'Click "Book New Session" to schedule your first tutoring session.'
+								: "There are no sessions to show right now."
+						}
+					/>
 				</CardContent>
 			</Card>
 
@@ -208,6 +305,64 @@ function Sessions() {
 					onCancel={handleCloseModal}
 				/>
 			</Modal>
+
+			<Modal
+				isOpen={Boolean(pendingDecision)}
+				onClose={() => (isUpdatingStatus ? null : setPendingDecision(null))}
+				title='Session Request'
+				size='md'
+				footer={
+					<>
+						<Button
+							type='button'
+							variant='outline'
+							className='border-rose-400 text-rose-700 hover:bg-rose-50'
+							disabled={isUpdatingStatus}
+							onClick={() => handleDecision("cancelled")}>
+							Reject
+						</Button>
+						<Button
+							type='button'
+							disabled={isUpdatingStatus}
+							onClick={() => handleDecision("confirmed")}>
+							Approve
+						</Button>
+					</>
+				}>
+				{pendingDecision ? (
+					<div className='flex flex-col gap-2 text-sm text-slate-700'>
+						<p>
+							<strong className='text-slate-900'>Student:</strong>{" "}
+							{pendingDecision.student?.name || "Unknown"}
+						</p>
+						<p>
+							<strong className='text-slate-900'>Course:</strong>{" "}
+							{pendingDecision.course || "-"}
+						</p>
+						<p>
+							<strong className='text-slate-900'>Date:</strong>{" "}
+							{pendingDecision.date
+								? new Date(pendingDecision.date).toLocaleDateString()
+								: "-"}
+						</p>
+						<p>
+							<strong className='text-slate-900'>Time:</strong>{" "}
+							{pendingDecision.startTime} - {pendingDecision.endTime}
+						</p>
+						<p>
+							<strong className='text-slate-900'>Notes:</strong>{" "}
+							{pendingDecision.notes || "No notes"}
+						</p>
+						<p className='mt-2'>Approve or reject this session request?</p>
+					</div>
+				) : null}
+			</Modal>
+
+			<ReviewDialog
+				isOpen={Boolean(reviewTarget)}
+				onClose={() => setReviewTarget(null)}
+				booking={reviewTarget}
+			/>
 		</Layout>
 	);
 }

@@ -87,6 +87,30 @@ const options = {
 						updatedAt: { type: "string", format: "date-time" },
 					},
 				},
+				Review: {
+					type: "object",
+					properties: {
+						_id: { type: "string", example: "664f1a2b3c4d5e6f7a8b9c0d" },
+						student: { type: "string", description: "Student user ID" },
+						tutor: { type: "string", description: "Tutor user ID" },
+						booking: {
+							type: "string",
+							description: "Booking ID this review is tied to",
+						},
+						rating: {
+							type: "integer",
+							minimum: 1,
+							maximum: 5,
+							example: 5,
+						},
+						comment: {
+							type: "string",
+							example: "Super helpful with recursion!",
+						},
+						createdAt: { type: "string", format: "date-time" },
+						updatedAt: { type: "string", format: "date-time" },
+					},
+				},
 			},
 		},
 	},
