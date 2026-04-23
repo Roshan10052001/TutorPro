@@ -58,7 +58,7 @@ const {
  *       404:
  *         description: Booking not found
  */
-router.post("/", protect, authorize("student"), createReview);
+router.post("/", protect, createReview);
 
 /**
  * @swagger
@@ -89,7 +89,7 @@ router.post("/", protect, authorize("student"), createReview);
  *       403:
  *         description: Only students can access this endpoint
  */
-router.get("/me", protect, authorize("student", "tutor"), getMyReviews);
+router.get("/me", protect, getMyReviews);
 
 /**
  * @swagger
