@@ -143,7 +143,7 @@ function Sessions() {
 					const s = session.status || "pending";
 					return (
 						<Badge
-							variant="secondary"
+							variant='secondary'
 							className={`font-semibold ${STATUS_VARIANTS[s] || ""}`}>
 							{s}
 						</Badge>
@@ -164,9 +164,9 @@ function Sessions() {
 								if (session.status === "pending") {
 									return (
 										<Button
-											type="button"
-											variant="outline"
-											size="sm"
+											type='button'
+											variant='outline'
+											size='sm'
 											onClick={() => setPendingDecision(session)}>
 											Review request
 										</Button>
@@ -175,8 +175,8 @@ function Sessions() {
 								if (session.status === "confirmed") {
 									return (
 										<Button
-											type="button"
-											size="sm"
+											type='button'
+											size='sm'
 											disabled={isUpdatingStatus}
 											onClick={() =>
 												updateStatus({
@@ -201,12 +201,14 @@ function Sessions() {
 							render: (session) => {
 								if (session.status !== "completed") return "—";
 								if (reviewedBookingIds.has(session._id))
-									return <span className="text-sm text-slate-500">Reviewed</span>;
+									return (
+										<span className='text-sm text-slate-500'>Reviewed</span>
+									);
 								return (
 									<Button
-										type="button"
-										variant="outline"
-										size="sm"
+										type='button'
+										variant='outline'
+										size='sm'
 										onClick={() => handleLeaveReview(session)}>
 										Leave review
 									</Button>
@@ -283,13 +285,15 @@ function Sessions() {
 			buttonText={effectiveRole === "student" ? "Book New Session" : undefined}
 			onButtonClick={effectiveRole === "student" ? handleOpenModal : undefined}>
 			<Card>
-				<CardContent className="p-6">
-					<h2 className="mb-4 text-lg font-bold text-slate-900">Session List</h2>
+				<CardContent className='p-6'>
+					<h2 className='mb-4 text-lg font-bold text-slate-900'>
+						Session List
+					</h2>
 					<DataTable
 						columns={columns}
 						data={sortedSessions}
 						isLoading={isSessionsLoading}
-						emptyTitle="No sessions yet"
+						emptyTitle='No sessions yet'
 						emptyText={
 							effectiveRole === "student"
 								? 'Click "Book New Session" to schedule your first tutoring session.'
@@ -302,8 +306,8 @@ function Sessions() {
 			<Modal
 				isOpen={isModalOpen}
 				onClose={handleCloseModal}
-				title="Book New Session"
-				size="lg">
+				title='Book New Session'
+				size='lg'>
 				<BookingForm
 					initialTutorId={requestedTutorId}
 					onSuccess={handleCloseModal}
@@ -314,20 +318,20 @@ function Sessions() {
 			<Modal
 				isOpen={Boolean(pendingDecision)}
 				onClose={() => (isUpdatingStatus ? null : setPendingDecision(null))}
-				title="Session Request"
-				size="md"
+				title='Session Request'
+				size='md'
 				footer={
 					<>
 						<Button
-							type="button"
-							variant="outline"
-							className="border-rose-400 text-rose-700 hover:bg-rose-50"
+							type='button'
+							variant='outline'
+							className='border-rose-400 text-rose-700 hover:bg-rose-50'
 							disabled={isUpdatingStatus}
 							onClick={() => handleDecision("cancelled")}>
 							Reject
 						</Button>
 						<Button
-							type="button"
+							type='button'
 							disabled={isUpdatingStatus}
 							onClick={() => handleDecision("confirmed")}>
 							Approve
@@ -335,28 +339,30 @@ function Sessions() {
 					</>
 				}>
 				{pendingDecision ? (
-					<div className="flex flex-col gap-2 text-sm text-slate-700">
+					<div className='flex flex-col gap-2 text-sm text-slate-700'>
 						<p>
-							<strong className="text-slate-900">Student:</strong>{" "}
+							<strong className='text-slate-900'>Student:</strong>{" "}
 							{pendingDecision.student?.name || "Unknown"}
 						</p>
 						<p>
-							<strong className="text-slate-900">Course:</strong> {pendingDecision.course || "-"}
+							<strong className='text-slate-900'>Course:</strong>{" "}
+							{pendingDecision.course || "-"}
 						</p>
 						<p>
-							<strong className="text-slate-900">Date:</strong>{" "}
+							<strong className='text-slate-900'>Date:</strong>{" "}
 							{pendingDecision.date
 								? new Date(pendingDecision.date).toLocaleDateString()
 								: "-"}
 						</p>
 						<p>
-							<strong className="text-slate-900">Time:</strong> {pendingDecision.startTime} -{" "}
-							{pendingDecision.endTime}
+							<strong className='text-slate-900'>Time:</strong>{" "}
+							{pendingDecision.startTime} - {pendingDecision.endTime}
 						</p>
 						<p>
-							<strong className="text-slate-900">Notes:</strong> {pendingDecision.notes || "No notes"}
+							<strong className='text-slate-900'>Notes:</strong>{" "}
+							{pendingDecision.notes || "No notes"}
 						</p>
-						<p className="mt-2">Approve or reject this session request?</p>
+						<p className='mt-2'>Approve or reject this session request?</p>
 					</div>
 				) : null}
 			</Modal>
