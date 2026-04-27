@@ -78,11 +78,11 @@ const tutorApplicationSchema = new mongoose.Schema(
 			type: String,
 			required: [true, "Bio is required"],
 			trim: true,
-			maxlength: 500,
+			maxlength: 1000,
 		},
 		status: {
 			type: String,
-			enum: ["pending", "approved", "rejected"],
+			enum: ["pending", "approved", "rejected", "changes_requested"],
 			default: "pending",
 		},
 		adminNotes: {

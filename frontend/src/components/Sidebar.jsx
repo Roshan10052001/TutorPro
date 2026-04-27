@@ -114,37 +114,23 @@ function Sidebar({ role, name, onNavigate }) {
 					</div>
 				</div>
 
-				<div className='mt-4 rounded-2xl border border-white/60 bg-white/75 p-3 shadow-sm shadow-slate-200/50 backdrop-blur'>
-					<p className='text-xs font-semibold uppercase tracking-[0.18em] text-slate-400'>
-						Active workspace
-					</p>
-					<div className='mt-2 flex items-center justify-between gap-3'>
-						<div>
-							<p className='text-sm font-bold text-slate-900'>{role} tools</p>
-							<p className='text-xs text-slate-500'>
-								Shortcuts and role-based navigation
-							</p>
-						</div>
-						<span className='rounded-full bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-700'>
-							{role}
-						</span>
-					</div>
-				</div>
-
 				{canSwitchView ? (
-					<div className='mt-3.5 flex flex-col gap-2.5 rounded-2xl bg-blue-500/10 p-3'>
-						<span className='text-sm font-bold text-blue-900'>
-							Current view: {activeView === "student" ? "Student" : "Tutor"}
-						</span>
-						<div className='flex flex-wrap gap-2'>
+					<div className='mt-4 rounded-2xl border border-white/60 bg-white/75 p-3 shadow-sm shadow-slate-200/50 backdrop-blur'>
+						<p className='text-xs font-semibold uppercase tracking-[0.18em] text-slate-400'>
+							Current view
+						</p>
+						<p className='mt-2 text-sm font-bold text-slate-900'>
+							{activeView === "student" ? "Student" : "Tutor"} tools
+						</p>
+						<div className='mt-3 grid grid-cols-2 gap-2'>
 							<button
 								type='button'
 								onClick={() => handleSwitchView("student")}
 								className={cn(
-									"rounded-full border px-3 py-2 font-bold transition",
+									"min-h-10 rounded-xl border px-3 text-center text-sm font-bold transition",
 									activeView === "student"
 										? "border-blue-600 bg-blue-600 text-white"
-										: "border-blue-500/20 bg-white/90 text-slate-600",
+										: "border-blue-500/20 bg-white/90 text-slate-600 hover:border-blue-300 hover:text-blue-700",
 								)}>
 								Student View
 							</button>
@@ -152,10 +138,10 @@ function Sidebar({ role, name, onNavigate }) {
 								type='button'
 								onClick={() => handleSwitchView("tutor")}
 								className={cn(
-									"rounded-full border px-3 py-2 font-bold transition",
+									"min-h-10 rounded-xl border px-3 text-center text-sm font-bold transition",
 									activeView === "tutor"
 										? "border-blue-600 bg-blue-600 text-white"
-										: "border-blue-500/20 bg-white/90 text-slate-600",
+										: "border-blue-500/20 bg-white/90 text-slate-600 hover:border-blue-300 hover:text-blue-700",
 								)}>
 								Tutor View
 							</button>

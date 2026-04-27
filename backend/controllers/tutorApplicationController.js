@@ -1,5 +1,6 @@
 const TutorApplication = require("../models/TutorApplication");
 const User = require("../models/User");
+const Notification = require("../models/Notification");
 const asyncHandler = require("../utils/asyncHandler");
 const ErrorResponse = require("../utils/errorResponse");
 const {
@@ -19,6 +20,22 @@ function scoreInBackground(applicationId) {
 		.catch((err) => {
 			console.error("AI scoring failed:", err.message);
 		});
+}
+
+async function notifyAdminsOfTutorApplication(application) {
+	const admins = await User.find({ role: "admin" }).select("_id");
+
+	if (!admins.length) return;
+
+	await Notification.insertMany(
+		admins.map((admin) => ({
+			user: admin._id,
+			type: "tutor_application_submitted",
+			title: "New tutor application",
+			message: `${application.name} applied to tutor ${application.course}.`,
+			targetPath: `/admin/tutor-applications?application=${application._id}`,
+		})),
+	);
 }
 
 // @desc    Submit tutor application
@@ -65,6 +82,12 @@ exports.submitTutorApplication = asyncHandler(async (req, res, next) => {
 	});
 
 	scoreInBackground(application._id);
+
+	try {
+		await notifyAdminsOfTutorApplication(application);
+	} catch (err) {
+		console.error("Failed to create tutor application notification:", err);
+	}
 
 	res.status(201).json({
 		success: true,
@@ -198,7 +221,7 @@ exports.updateMyTutorAvailability = asyncHandler(async (req, res, next) => {
 exports.updateTutorApplicationStatus = asyncHandler(async (req, res, next) => {
 	const { status, adminNotes } = req.body;
 
-	if (!["approved", "rejected"].includes(status)) {
+	if (!["approved", "rejected", "changes_requested"].includes(status)) {
 		return next(new ErrorResponse("Invalid status value", 400));
 	}
 
@@ -208,6 +231,7 @@ exports.updateTutorApplicationStatus = asyncHandler(async (req, res, next) => {
 		return next(new ErrorResponse("Tutor application not found", 404));
 	}
 
+	const previousStatus = application.status;
 	application.status = status;
 	application.adminNotes = adminNotes || "";
 	await application.save();
@@ -223,9 +247,94 @@ exports.updateTutorApplicationStatus = asyncHandler(async (req, res, next) => {
 		await user.save();
 	}
 
+	if (previousStatus !== status) {
+		try {
+			await Notification.create({
+				user: application.user,
+				type: "tutor_application_decision",
+				title:
+					status === "approved"
+						? "Tutor application approved"
+						: status === "changes_requested"
+							? "Tutor application changes requested"
+							: "Tutor application rejected",
+				message:
+					status === "approved"
+						? `Your ${application.course} tutor application was approved.`
+						: status === "changes_requested"
+							? `Changes were requested for your ${application.course} tutor application.`
+							: `Your ${application.course} tutor application was rejected.`,
+				targetPath:
+					status === "approved"
+						? `/tutor/tutor-apply?application=${application._id}`
+						: `/student/tutor-apply?application=${application._id}`,
+			});
+		} catch (err) {
+			console.error(
+				"Failed to create tutor application decision notification:",
+				err,
+			);
+		}
+	}
+
 	res.status(200).json({
 		success: true,
 		message: "Tutor application status updated successfully",
+		data: application,
+	});
+});
+
+// @desc    Resubmit tutor application after changes requested
+// @route   PUT /api/v1/tutor-applications/:id/resubmit
+// @access  Private
+exports.resubmitTutorApplication = asyncHandler(async (req, res, next) => {
+	const { course, availability, bio } = req.body;
+
+	if (!course || !bio) {
+		return next(new ErrorResponse("Please provide all required fields", 400));
+	}
+
+	if (!Array.isArray(availability) || availability.length === 0) {
+		return next(
+			new ErrorResponse("Please provide at least one availability slot", 400),
+		);
+	}
+
+	const application = await TutorApplication.findOne({
+		_id: req.params.id,
+		user: req.user._id,
+		status: "changes_requested",
+	});
+
+	if (!application) {
+		return next(
+			new ErrorResponse("Application not found or cannot be resubmitted", 404),
+		);
+	}
+
+	application.course = course;
+	application.availability = availability;
+	application.bio = bio;
+	application.status = "pending";
+	application.adminNotes = "";
+	application.aiScore = undefined;
+
+	await application.save();
+
+	scoreInBackground(application._id);
+
+	try {
+		await notifyAdminsOfTutorApplication(application);
+	} catch (err) {
+		console.error(
+			"Failed to notify admins of tutor application resubmission:",
+			err,
+		);
+	}
+
+	res.status(200).json({
+		success: true,
+		message: "Tutor application resubmitted successfully",
 		data: application,
 	});
 });

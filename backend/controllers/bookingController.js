@@ -54,6 +54,37 @@ function buildDateTime(dateValue, timeString) {
 	date.setHours(hours, minutes, 0, 0);
 	return date;
 }
+
+function getBookingStatusNotification(status, booking) {
+	const details = `${booking.course} on ${booking.startTime}-${booking.endTime}`;
+
+	if (status === "confirmed") {
+		return {
+			title: "Session approved",
+			message: `Your ${details} session was approved.`,
+		};
+	}
+
+	if (status === "cancelled") {
+		return {
+			title: "Session rejected",
+			message: `Your ${details} session was rejected.`,
+		};
+	}
+
+	if (status === "completed") {
+		return {
+			title: "Session completed",
+			message: `Your ${details} session was marked complete.`,
+		};
+	}
+
+	return {
+		title: "Session updated",
+		message: `Your ${details} session was updated.`,
+	};
+}
+
 // @desc    Create a new booking
 // @route   POST /api/v1/bookings
 // @access  Private (students only)
@@ -128,6 +159,7 @@ exports.createBooking = asyncHandler(async (req, res, next) => {
 			type: "booking_created",
 			title: "New booking request",
 			message: `${req.user.name} booked ${course} on ${startTime}–${endTime}.`,
+			targetPath: "/tutor/sessions",
 			relatedBooking: booking._id,
 		});
 	} catch (err) {
@@ -321,8 +353,32 @@ exports.updateBookingStatus = asyncHandler(async (req, res, next) => {
 		);
 	}
 
+	const previousStatus = booking.status;
 	booking.status = status;
 	await booking.save();
+
+	if (
+		previousStatus !== status &&
+		status !== "pending" &&
+		booking.student.toString() !== req.user._id.toString()
+	) {
+		try {
+			const notification = getBookingStatusNotification(status, booking);
+			await Notification.create({
+				user: booking.student,
+				type:
+					status === "cancelled"
+						? "booking_cancelled"
+						: "booking_status_updated",
+				title: notification.title,
+				message: notification.message,
+				targetPath: "/student/sessions",
+				relatedBooking: booking._id,
+			});
+		} catch (err) {
+			console.error("Failed to create booking status notification:", err);
+		}
+	}
 
 	res.status(200).json({
 		success: true,
@@ -360,6 +416,42 @@ exports.cancelBooking = asyncHandler(async (req, res, next) => {
 
 	booking.status = "cancelled";
 	await booking.save();
+
+	try {
+		const notifications = [];
+		const isStudentCancelling =
+			booking.student.toString() === req.user._id.toString();
+		const isTutorCancelling =
+			booking.tutor.toString() === req.user._id.toString();
+
+		if (isStudentCancelling || req.user.role === "admin") {
+			notifications.push({
+				user: booking.tutor,
+				type: "booking_cancelled",
+				title: "Session cancelled",
+				message: `${req.user.name} cancelled a ${booking.course} session.`,
+				targetPath: "/tutor/sessions",
+				relatedBooking: booking._id,
+			});
+		}
+
+		if (isTutorCancelling || req.user.role === "admin") {
+			notifications.push({
+				user: booking.student,
+				type: "booking_cancelled",
+				title: "Session cancelled",
+				message: `${req.user.name} cancelled your ${booking.course} session.`,
+				targetPath: "/student/sessions",
+				relatedBooking: booking._id,
+			});
+		}
+
+		if (notifications.length) {
+			await Notification.insertMany(notifications);
+		}
+	} catch (err) {
+		console.error("Failed to create booking cancellation notification:", err);
+	}
 
 	res.status(200).json({
 		success: true,

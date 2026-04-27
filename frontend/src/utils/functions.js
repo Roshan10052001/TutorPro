@@ -53,3 +53,18 @@ export const convertMinutesToTime = (totalMinutes) => {
 
 	return `${hours}:${String(minutes).padStart(2, "0")} ${modifier}`;
 };
+
+export const buildSlotLabel = (slotForm) => ({
+	day: slotForm.day,
+	startTime: `${slotForm.hour}:${slotForm.minute} ${slotForm.period}`,
+	endTime: `${slotForm.endHour}:${slotForm.endMinute} ${slotForm.endPeriod}`,
+	sessionLengthMinutes: Number(slotForm.sessionLengthMinutes),
+});
+
+export const convertToMinutes = (timeString) => {
+	const [time, modifier] = timeString.split(" ");
+	let [hours, minutes] = time.split(":").map(Number);
+	if (modifier === "PM" && hours !== 12) hours += 12;
+	if (modifier === "AM" && hours === 12) hours = 0;
+	return hours * 60 + minutes;
+};

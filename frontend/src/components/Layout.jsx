@@ -48,7 +48,7 @@ function Layout({
 			<div
 				className={cn(
 					"z-40 border-r border-white/40 bg-white/72 backdrop-blur-xl",
-					"fixed top-0 left-0 h-screen w-[min(82vw,320px)] shadow-xl transition-transform duration-200 lg:sticky lg:w-auto lg:shadow-none",
+					"fixed top-0 left-0 h-screen w-[min(82vw,320px)] shadow-xl transition-transform duration-200 lg:w-[300px] lg:shadow-none",
 					isMobileNavOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
 				)}>
 				<Sidebar
@@ -58,7 +58,7 @@ function Layout({
 				/>
 			</div>
 
-			<div className="relative min-h-screen min-w-0 px-4 pt-5 pb-8 lg:px-8 lg:pt-7 lg:pb-10">
+			<div className="relative min-h-screen min-w-0 px-4 pt-5 pb-8 lg:col-start-2 lg:px-8 lg:pt-7 lg:pb-10">
 				<div className="mb-4 flex lg:hidden">
 					<button
 						type="button"
