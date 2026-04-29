@@ -89,7 +89,7 @@ router.post("/", protect, createReview);
  *       403:
  *         description: Only students can access this endpoint
  */
-router.get("/me", protect, getMyReviews);
+router.get("/me", protect, authorize("student"), getMyReviews);
 
 /**
  * @swagger
