@@ -57,7 +57,7 @@ function getFallbackNotificationPath(notification, effectiveRole) {
 function getNotificationPath(notification, effectiveRole) {
 	const targetPath = notification.targetPath?.trim();
 
-	if (targetPath?.startsWith("/")) {
+	if (targetPath && /^\/[^/]/.test(targetPath)) {
 		return targetPath;
 	}
 

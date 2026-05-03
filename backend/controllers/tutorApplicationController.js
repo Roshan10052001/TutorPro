@@ -81,7 +81,8 @@ function validateAvailabilitySlots(availability) {
 		if (
 			typeof sessionLengthMinutes !== "number" ||
 			!Number.isFinite(sessionLengthMinutes) ||
-			sessionLengthMinutes < 15
+			sessionLengthMinutes < 15 ||
+			sessionLengthMinutes > 240
 		) {
 			return "Each availability slot must include a valid session length";
 		}

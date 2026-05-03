@@ -22,8 +22,8 @@ router.put(
 	authorize("tutor"),
 	updateMyTutorAvailability,
 );
-router.put("/:id", protect, authorize("admin"), updateTutorApplicationStatus);
 router.put("/:id/resubmit", protect, resubmitTutorApplication);
+router.put("/:id", protect, authorize("admin"), updateTutorApplicationStatus);
 router.post("/:id/score", protect, authorize("admin"), rescoreTutorApplication);
 router.post(
 	"/:id/admin-notes",

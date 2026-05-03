@@ -63,6 +63,7 @@ const tutorApplicationSchema = new mongoose.Schema(
 						type: Number,
 						required: true,
 						min: 15,
+						max: 240,
 					},
 				},
 			],
