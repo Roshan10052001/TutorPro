@@ -92,6 +92,15 @@ const cancelBooking = async (bookingId) => {
 	return data?.data;
 };
 
+const refreshBookingData = () => {
+	queryClient.invalidateQueries({
+		queryKey: [queryKeys.bookings],
+	});
+	queryClient.invalidateQueries({
+		queryKey: [queryKeys.notifications],
+	});
+};
+
 export const useGetBookings = (params = {}) => {
 	return useQuery({
 		queryKey: [queryKeys.bookings, params],
@@ -119,9 +128,7 @@ export function useCreateBooking() {
 			mutationFn: createBooking,
 			onSuccess: () => {
 				successAlert("Booking created successfully");
-				queryClient.invalidateQueries({
-					queryKey: [queryKeys.bookings],
-				});
+				refreshBookingData();
 				queryClient.invalidateQueries({
 					queryKey: [queryKeys.tutors],
 				});
@@ -144,9 +151,7 @@ export function useUpdateBooking() {
 				}),
 			onSuccess: () => {
 				successAlert("Booking updated successfully");
-				queryClient.invalidateQueries({
-					queryKey: [queryKeys.bookings],
-				});
+				refreshBookingData();
 			},
 			onError: (error) => {
 				errorAlert(error);
@@ -162,9 +167,7 @@ export function useDeleteBooking() {
 			mutationFn: deleteBooking,
 			onSuccess: () => {
 				successAlert("Booking deleted successfully");
-				queryClient.invalidateQueries({
-					queryKey: [queryKeys.bookings],
-				});
+				refreshBookingData();
 			},
 			onError: (error) => {
 				errorAlert(error);
@@ -184,9 +187,7 @@ export function useUpdateBookingStatus() {
 				}),
 			onSuccess: () => {
 				successAlert("Booking status updated successfully");
-				queryClient.invalidateQueries({
-					queryKey: [queryKeys.bookings],
-				});
+				refreshBookingData();
 			},
 			onError: (error) => {
 				errorAlert(error);
@@ -202,9 +203,7 @@ export function useCancelBooking() {
 			mutationFn: cancelBooking,
 			onSuccess: () => {
 				successAlert("Booking cancelled successfully");
-				queryClient.invalidateQueries({
-					queryKey: [queryKeys.bookings],
-				});
+				refreshBookingData();
 			},
 			onError: (error) => {
 				errorAlert(error);

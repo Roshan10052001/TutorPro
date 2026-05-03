@@ -40,7 +40,7 @@ const submitTutorApplication = async (payload) => {
 	return data;
 };
 
-const updateTutorApplication = async ({
+const updateTutorApplicationStatus = async ({
 	applicationId,
 	status,
 	adminNotes,
@@ -52,6 +52,20 @@ const updateTutorApplication = async ({
 			status,
 			adminNotes: adminNotes || "",
 		},
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
+
+	return data?.data;
+};
+
+const updateTutorApplication = async (payload) => {
+	const { id, ...updateData } = payload;
+	const { data } = await axiosInstance({
+		url: `/tutor-application/${id}/resubmit`,
+		method: "PUT",
+		data: updateData,
 		headers: {
 			"Content-Type": "application/json",
 		},
@@ -101,6 +115,18 @@ const updateMyTutorAvailability = async ({ applicationId, availability }) => {
 	return data?.data;
 };
 
+const refreshTutorApplicationData = () => {
+	queryClient.invalidateQueries({
+		queryKey: [queryKeys.tutorApplication],
+	});
+	queryClient.invalidateQueries({
+		queryKey: [queryKeys.allTutorApplications],
+	});
+	queryClient.invalidateQueries({
+		queryKey: [queryKeys.notifications],
+	});
+};
+
 export const useGetAllTutorApplications = () => {
 	return useQuery({
 		queryKey: [queryKeys.allTutorApplications],
@@ -125,12 +151,7 @@ export function useSubmitTutorApplication() {
 	const { mutate, mutateAsync, reset, isPending } = useMutation({
 		mutationFn: submitTutorApplication,
 		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: [queryKeys.tutorApplication],
-			});
-			queryClient.invalidateQueries({
-				queryKey: [queryKeys.allTutorApplications],
-			});
+			refreshTutorApplicationData();
 		},
 		onError: (error) => {
 			errorAlert(error);
@@ -140,23 +161,34 @@ export function useSubmitTutorApplication() {
 	return { mutate, mutateAsync, reset, isPending };
 }
 
-export function useUpdateTutorApplication() {
+export function useUpdateTutorApplicationStatus() {
 	const { mutate, mutateAsync, isSuccess, isError, reset, error, isPending } =
 		useMutation({
 			mutationFn: ({ applicationId, status, adminNotes }) =>
-				updateTutorApplication({
+				updateTutorApplicationStatus({
 					applicationId,
 					status,
 					adminNotes,
 				}),
 			onSuccess: () => {
 				successAlert("Tutor application status updated successfully");
-				queryClient.invalidateQueries({
-					queryKey: [queryKeys.tutorApplication],
-				});
-				queryClient.invalidateQueries({
-					queryKey: [queryKeys.allTutorApplications],
-				});
+				refreshTutorApplicationData();
+			},
+			onError: (error) => {
+				errorAlert(error);
+			},
+		});
+
+	return { mutate, mutateAsync, isSuccess, isError, reset, error, isPending };
+}
+
+export function useUpdateTutorApplication() {
+	const { mutate, mutateAsync, isSuccess, isError, reset, error, isPending } =
+		useMutation({
+			mutationFn: (payload) => updateTutorApplication(payload),
+			onSuccess: () => {
+				successAlert("Tutor application updated successfully");
+				refreshTutorApplicationData();
 			},
 			onError: (error) => {
 				errorAlert(error);

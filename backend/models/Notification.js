@@ -10,7 +10,13 @@ const notificationSchema = new mongoose.Schema(
 		},
 		type: {
 			type: String,
-			enum: ["booking_created"],
+			enum: [
+				"booking_created",
+				"booking_status_updated",
+				"booking_cancelled",
+				"tutor_application_submitted",
+				"tutor_application_decision",
+			],
 			required: true,
 		},
 		title: {
@@ -20,6 +26,11 @@ const notificationSchema = new mongoose.Schema(
 		message: {
 			type: String,
 			default: "",
+		},
+		targetPath: {
+			type: String,
+			default: "",
+			match: [/^\/[^/][a-zA-Z0-9/_?=&%-]*$/, "Invalid targetPath"],
 		},
 		read: {
 			type: Boolean,

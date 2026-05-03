@@ -3,6 +3,7 @@ const User = require("../models/User");
 const Notification = require("../models/Notification");
 const asyncHandler = require("../utils/asyncHandler");
 const ErrorResponse = require("../utils/errorResponse");
+const { sanitizeNotificationValue } = require("../utils/notificationText");
 
 function getBookingAccess(booking, user, populated = false) {
 	const studentId = populated
@@ -54,6 +55,41 @@ function buildDateTime(dateValue, timeString) {
 	date.setHours(hours, minutes, 0, 0);
 	return date;
 }
+
+const BOOKING_STATUS_NOTIFICATION_TEMPLATES = {
+	confirmed: {
+		title: "Session approved",
+		message: (details) => `Your ${details} session was approved.`,
+	},
+	cancelled: {
+		title: "Session rejected",
+		message: (details) => `Your ${details} session was rejected.`,
+	},
+	completed: {
+		title: "Session completed",
+		message: (details) => `Your ${details} session was marked complete.`,
+	},
+	default: {
+		title: "Session updated",
+		message: (details) => `Your ${details} session was updated.`,
+	},
+};
+
+function getBookingStatusNotification(status, booking) {
+	const safeCourse = sanitizeNotificationValue(booking.course, 60);
+	const safeStartTime = sanitizeNotificationValue(booking.startTime, 20);
+	const safeEndTime = sanitizeNotificationValue(booking.endTime, 20);
+	const details = `${safeCourse} on ${safeStartTime}-${safeEndTime}`;
+	const template =
+		BOOKING_STATUS_NOTIFICATION_TEMPLATES[status] ||
+		BOOKING_STATUS_NOTIFICATION_TEMPLATES.default;
+
+	return {
+		title: template.title,
+		message: template.message(details),
+	};
+}
+
 // @desc    Create a new booking
 // @route   POST /api/v1/bookings
 // @access  Private (students only)
@@ -123,11 +159,17 @@ exports.createBooking = asyncHandler(async (req, res, next) => {
 	});
 
 	try {
+		const safeStudentName = sanitizeNotificationValue(req.user.name, 50);
+		const safeCourse = sanitizeNotificationValue(course, 60);
+		const safeStartTime = sanitizeNotificationValue(startTime, 20);
+		const safeEndTime = sanitizeNotificationValue(endTime, 20);
+
 		await Notification.create({
 			user: tutor,
 			type: "booking_created",
 			title: "New booking request",
-			message: `${req.user.name} booked ${course} on ${startTime}–${endTime}.`,
+			message: `${safeStudentName} booked ${safeCourse} on ${safeStartTime}-${safeEndTime}.`,
+			targetPath: "/tutor/sessions",
 			relatedBooking: booking._id,
 		});
 	} catch (err) {
@@ -321,8 +363,32 @@ exports.updateBookingStatus = asyncHandler(async (req, res, next) => {
 		);
 	}
 
+	const previousStatus = booking.status;
 	booking.status = status;
 	await booking.save();
+
+	if (
+		previousStatus !== status &&
+		status !== "pending" &&
+		booking.student.toString() !== req.user._id.toString()
+	) {
+		try {
+			const notification = getBookingStatusNotification(status, booking);
+			await Notification.create({
+				user: booking.student,
+				type:
+					status === "cancelled"
+						? "booking_cancelled"
+						: "booking_status_updated",
+				title: notification.title,
+				message: notification.message,
+				targetPath: "/student/sessions",
+				relatedBooking: booking._id,
+			});
+		} catch (err) {
+			console.error("Failed to create booking status notification:", err);
+		}
+	}
 
 	res.status(200).json({
 		success: true,
@@ -360,6 +426,48 @@ exports.cancelBooking = asyncHandler(async (req, res, next) => {
 
 	booking.status = "cancelled";
 	await booking.save();
+
+	try {
+		const notifications = [];
+		const isStudentCancelling =
+			booking.student.toString() === req.user._id.toString();
+		const isTutorCancelling =
+			booking.tutor.toString() === req.user._id.toString();
+
+		if (isStudentCancelling || req.user.role === "admin") {
+			const safeActorName = sanitizeNotificationValue(req.user.name, 50);
+			const safeCourse = sanitizeNotificationValue(booking.course, 60);
+
+			notifications.push({
+				user: booking.tutor,
+				type: "booking_cancelled",
+				title: "Session cancelled",
+				message: `${safeActorName} cancelled a ${safeCourse} session.`,
+				targetPath: "/tutor/sessions",
+				relatedBooking: booking._id,
+			});
+		}
+
+		if (isTutorCancelling || req.user.role === "admin") {
+			const safeActorName = sanitizeNotificationValue(req.user.name, 50);
+			const safeCourse = sanitizeNotificationValue(booking.course, 60);
+
+			notifications.push({
+				user: booking.student,
+				type: "booking_cancelled",
+				title: "Session cancelled",
+				message: `${safeActorName} cancelled your ${safeCourse} session.`,
+				targetPath: "/student/sessions",
+				relatedBooking: booking._id,
+			});
+		}
+
+		if (notifications.length) {
+			await Notification.insertMany(notifications);
+		}
+	} catch (err) {
+		console.error("Failed to create booking cancellation notification:", err);
+	}
 
 	res.status(200).json({
 		success: true,

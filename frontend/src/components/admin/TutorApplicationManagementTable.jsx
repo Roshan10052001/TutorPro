@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import DataTable from "../DataTable";
 import Modal from "../Modal";
 import { useConfirm } from "../ConfirmProvider";
 import {
-	useUpdateTutorApplication,
+	useUpdateTutorApplicationStatus,
 	useRescoreTutorApplication,
 	useSuggestAdminNotes,
 	usePolishAdminNote,
@@ -16,12 +17,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-
-const STATUS_VARIANTS = {
-	pending: "bg-amber-100 text-amber-800",
-	approved: "bg-emerald-100 text-emerald-800",
-	rejected: "bg-rose-100 text-rose-800",
-};
+import {
+	TUTOR_APPLICATION_STATUS_LABELS,
+	TUTOR_APPLICATION_STATUS_VARIANTS,
+} from "../../constants/tutorApplicationStatus";
 
 const AI_RECOMMENDATION_VARIANTS = {
 	approve: "bg-emerald-100 text-emerald-800",
@@ -44,7 +43,7 @@ function TutorApplicationManagementTable({
 	viewMode = "all",
 }) {
 	const { mutateAsync: updateTutorApplication, isPending } =
-		useUpdateTutorApplication();
+		useUpdateTutorApplicationStatus();
 	const { mutateAsync: rescoreApplication, isPending: isRescoring } =
 		useRescoreTutorApplication();
 	const { mutateAsync: suggestNotes, isPending: isSuggesting } =
@@ -61,8 +60,25 @@ function TutorApplicationManagementTable({
 	const [selectedApplication, setSelectedApplication] = useState(null);
 	const [activeAction, setActiveAction] = useState("");
 	const [activeApplicationId, setActiveApplicationId] = useState("");
+	const [searchParams, setSearchParams] = useSearchParams();
+	const applicationIdFromUrl = searchParams.get("application");
 
 	const isActionPending = isPending || isDeletingTutor || isDeletingUser;
+
+	useEffect(() => {
+		if (!applicationIdFromUrl || !applications.length) return;
+
+		// Intentional: notification deep-links keep ?application in the URL so
+		// refreshes or revisits re-open the requested modal until the user closes it.
+		const application = applications.find(
+			(item) => item._id === applicationIdFromUrl,
+		);
+
+		if (application) {
+			setSuggestedNotes([]);
+			setSelectedApplication(application);
+		}
+	}, [applicationIdFromUrl, applications]);
 
 	const handleOpenRequest = (application) => {
 		setSuggestedNotes([]);
@@ -71,6 +87,13 @@ function TutorApplicationManagementTable({
 	const handleCloseRequest = () => {
 		setSuggestedNotes([]);
 		setSelectedApplication(null);
+		if (applicationIdFromUrl) {
+			setSearchParams((params) => {
+				const nextParams = new URLSearchParams(params);
+				nextParams.delete("application");
+				return nextParams;
+			});
+		}
 	};
 
 	const handleSuggestNotes = async () => {
@@ -117,7 +140,12 @@ function TutorApplicationManagementTable({
 	};
 
 	const handleSubmit = async (application, status) => {
-		const actionLabel = status === "approved" ? "approve" : "reject";
+		const actionLabel =
+			status === "approved"
+				? "approve"
+				: status === "changes_requested"
+					? "request changes for"
+					: "reject";
 		const notes = (
 			adminNotesById[application._id] ??
 			application.adminNotes ??
@@ -139,6 +167,7 @@ function TutorApplicationManagementTable({
 				adminNotes: notes,
 			});
 			setSelectedApplication(null);
+			handleCloseRequest();
 		} finally {
 			setActiveAction("");
 			setActiveApplicationId("");
@@ -219,8 +248,12 @@ function TutorApplicationManagementTable({
 			render: (application) => {
 				const status = application.status || "pending";
 				return (
-					<Badge className={STATUS_VARIANTS[status] || STATUS_VARIANTS.pending}>
-						{status}
+					<Badge
+						className={
+							TUTOR_APPLICATION_STATUS_VARIANTS[status] ||
+							TUTOR_APPLICATION_STATUS_VARIANTS.pending
+						}>
+						{TUTOR_APPLICATION_STATUS_LABELS[status] || status}
 					</Badge>
 				);
 			},
@@ -262,72 +295,89 @@ function TutorApplicationManagementTable({
 				title="Tutor Application Request"
 				size="lg">
 				{selectedApplication ? (
-					<div className="flex flex-col gap-4">
-						<div className="flex flex-col gap-1.5">
+					<div className='flex flex-col gap-4'>
+						<div className='flex flex-col gap-1.5'>
 							<Label>Name</Label>
-							<Input type="text" value={selectedApplication.name} readOnly />
-						</div>
-
-						<div className="flex flex-col gap-1.5">
-							<Label>Email</Label>
-							<Input type="email" value={selectedApplication.email} readOnly />
-						</div>
-
-						<div className="flex flex-col gap-1.5">
-							<Label>Course</Label>
-							<Input type="text" value={selectedApplication.course} readOnly />
-						</div>
-
-						<div className="flex flex-col gap-1.5">
-							<Label>Bio</Label>
-							<textarea
-								className="flex min-h-[96px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-								value={selectedApplication.bio}
-								rows="4"
+							<Input
+								type='text'
+								value={selectedApplication.name}
 								readOnly
 							/>
 						</div>
 
-						<div className="flex flex-col gap-1.5">
+						<div className='flex flex-col gap-1.5'>
+							<Label>Email</Label>
+							<Input
+								type='email'
+								value={selectedApplication.email}
+								readOnly
+							/>
+						</div>
+
+						<div className='flex flex-col gap-1.5'>
+							<Label>Course</Label>
+							<Input
+								type='text'
+								value={selectedApplication.course}
+								readOnly
+							/>
+						</div>
+
+						<div className='flex flex-col gap-1.5'>
+							<Label>Bio</Label>
+							<textarea
+								className='flex min-h-[96px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20'
+								value={selectedApplication.bio}
+								rows='4'
+								readOnly
+							/>
+						</div>
+
+						<div className='flex flex-col gap-1.5'>
 							<Label>Availability</Label>
-							<ul className="flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+							<ul className='flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700'>
 								{selectedApplication.availability.map((slot, index) => (
-									<li key={`${slot.day}-${slot.startTime}-${slot.endTime}-${index}`}>
+									<li
+										key={`${slot.day}-${slot.startTime}-${slot.endTime}-${index}`}>
 										{formatAvailabilitySlot(slot)}
 									</li>
 								))}
 							</ul>
 						</div>
 
-						<div className="flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-3">
-							<div className="flex items-center justify-between gap-2">
+						<div className='flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-3'>
+							<div className='flex items-center justify-between gap-2'>
 								<div>
-									<Label className="text-sm font-semibold">AI Recommendation</Label>
-									<p className="text-xs text-slate-500">
+									<Label className='text-sm font-semibold'>
+										AI Recommendation
+									</Label>
+									<p className='text-xs text-slate-500'>
 										Advisory — admin makes the final decision
 									</p>
 								</div>
 								<Button
-									type="button"
-									variant="outline"
-									size="sm"
+									type='button'
+									variant='outline'
+									size='sm'
 									onClick={async () => {
 										const updated = await rescoreApplication(
 											selectedApplication._id,
 										);
 										if (updated) setSelectedApplication(updated);
 									}}
-									disabled={isRescoring}>
+									disabled={
+										isRescoring || selectedApplication.status !== "pending"
+									}>
 									{isRescoring ? "Re-scoring..." : "Re-score"}
 								</Button>
 							</div>
 							{selectedApplication.aiScore?.error ? (
-								<p className="text-sm text-rose-700">
+								<p className='text-sm text-rose-700'>
 									Scoring failed: {selectedApplication.aiScore.error}
 								</p>
 							) : selectedApplication.aiScore?.recommendation ? (
 								<>
-									<div className="flex items-center gap-2">
+									<div className='flex items-center gap-2'>
 										<Badge
 											className={
 												AI_RECOMMENDATION_VARIANTS[
@@ -338,7 +388,7 @@ function TutorApplicationManagementTable({
 												selectedApplication.aiScore.recommendation
 											] || selectedApplication.aiScore.recommendation}
 										</Badge>
-										<span className="text-sm text-slate-600">
+										<span className='text-sm text-slate-600'>
 											{Math.round(
 												(selectedApplication.aiScore.confidence ?? 0) * 100,
 											)}
@@ -346,7 +396,7 @@ function TutorApplicationManagementTable({
 										</span>
 									</div>
 									{selectedApplication.aiScore.reasons?.length ? (
-										<ul className="list-inside list-disc text-sm text-slate-700">
+										<ul className='list-inside list-disc text-sm text-slate-700'>
 											{selectedApplication.aiScore.reasons
 												.slice(0, 5)
 												.map((reason, idx) => (
@@ -355,7 +405,7 @@ function TutorApplicationManagementTable({
 										</ul>
 									) : null}
 									{selectedApplication.aiScore.scoredAt ? (
-										<p className="text-xs text-slate-500">
+										<p className='text-xs text-slate-500'>
 											Scored{" "}
 											{new Date(
 												selectedApplication.aiScore.scoredAt,
@@ -364,23 +414,25 @@ function TutorApplicationManagementTable({
 									) : null}
 								</>
 							) : (
-								<p className="text-sm text-slate-500">Scoring in progress…</p>
+								<p className='text-sm text-slate-500'>Scoring in progress…</p>
 							)}
 						</div>
 
-						<div className="flex flex-col gap-1.5">
-							<div className="flex items-center justify-between gap-2">
+						<div className='flex flex-col gap-1.5'>
+							<div className='flex items-center justify-between gap-2'>
 								<Label>Comments</Label>
-								<div className="flex gap-2">
+								<div className='flex gap-2'>
 									{["reject", "needs_review"].includes(
 										selectedApplication.aiScore?.recommendation,
 									) ? (
 										<Button
-											type="button"
-											variant="outline"
-											size="sm"
+											type='button'
+											variant='outline'
+											size='sm'
 											onClick={handleSuggestNotes}
-											disabled={isSuggesting}>
+											disabled={
+												isSuggesting || selectedApplication.status !== "pending"
+											}>
 											{isSuggesting
 												? "Generating..."
 												: suggestedNotes.length
@@ -389,35 +441,37 @@ function TutorApplicationManagementTable({
 										</Button>
 									) : null}
 									<Button
-										type="button"
-										variant="outline"
-										size="sm"
+										type='button'
+										variant='outline'
+										size='sm'
 										onClick={handlePolishNote}
-										disabled={isPolishing}>
+										disabled={
+											isPolishing || selectedApplication.status !== "pending"
+										}>
 										{isPolishing ? "Polishing..." : "Polish with AI"}
 									</Button>
 								</div>
 							</div>
 							{suggestedNotes.length > 0 ? (
-								<div className="flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-2">
-									<p className="text-xs text-slate-500">
+								<div className='flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-2'>
+									<p className='text-xs text-slate-500'>
 										Click a suggestion to use it
 									</p>
 									{suggestedNotes.map((note, idx) => (
 										<button
 											key={idx}
-											type="button"
+											type='button'
 											onClick={() =>
 												handleNotesChange(selectedApplication._id, note)
 											}
-											className="rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-sm text-slate-700 hover:border-blue-400 hover:bg-blue-50">
+											className='rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-sm text-slate-700 hover:border-blue-400 hover:bg-blue-50'>
 											{note}
 										</button>
 									))}
 								</div>
 							) : null}
 							<textarea
-								className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+								className='flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20'
 								value={
 									adminNotesById[selectedApplication._id] ??
 									selectedApplication.adminNotes ??
@@ -426,16 +480,16 @@ function TutorApplicationManagementTable({
 								onChange={(event) =>
 									handleNotesChange(selectedApplication._id, event.target.value)
 								}
-								placeholder="Add comments for this application"
-								rows="3"
+								disabled={selectedApplication.status !== "pending"}
+								placeholder='Add comments for this application'
+								rows='3'
 							/>
 						</div>
 
-						<div className="flex flex-wrap gap-2 pt-2">
-							{selectedApplication.status === "pending" ||
-							selectedApplication.status === "rejected" ? (
+						<div className='flex flex-wrap gap-2 pt-2'>
+							{selectedApplication.status === "pending" ? (
 								<Button
-									type="button"
+									type='button'
 									onClick={() => handleSubmit(selectedApplication, "approved")}
 									disabled={isActionPending}>
 									{isPending &&
@@ -447,9 +501,25 @@ function TutorApplicationManagementTable({
 							) : null}
 							{selectedApplication.status === "pending" ? (
 								<Button
-									type="button"
-									variant="outline"
-									className="border-rose-400 text-rose-700 hover:bg-rose-50"
+									type='button'
+									variant='outline'
+									className='border-blue-400 text-blue-700 hover:bg-blue-50'
+									onClick={() =>
+										handleSubmit(selectedApplication, "changes_requested")
+									}
+									disabled={isActionPending}>
+									{isPending &&
+									activeAction === "changes_requested" &&
+									activeApplicationId === selectedApplication._id
+										? "Requesting..."
+										: "Request Changes"}
+								</Button>
+							) : null}
+							{selectedApplication.status === "pending" ? (
+								<Button
+									type='button'
+									variant='outline'
+									className='border-rose-400 text-rose-700 hover:bg-rose-50'
 									onClick={() => handleSubmit(selectedApplication, "rejected")}
 									disabled={isActionPending}>
 									{isPending &&
@@ -461,8 +531,8 @@ function TutorApplicationManagementTable({
 							) : null}
 							{selectedApplication.status === "approved" ? (
 								<Button
-									type="button"
-									variant="outline"
+									type='button'
+									variant='outline'
 									onClick={() => handleReverseTutor(selectedApplication)}
 									disabled={isActionPending}>
 									{isDeletingTutor &&
@@ -473,8 +543,8 @@ function TutorApplicationManagementTable({
 								</Button>
 							) : null}
 							<Button
-								type="button"
-								variant="destructive"
+								type='button'
+								variant='destructive'
 								onClick={() => handleDeleteAccount(selectedApplication)}
 								disabled={isActionPending}>
 								{isDeletingUser &&

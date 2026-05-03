@@ -29,22 +29,69 @@ function formatRelativeTime(iso) {
 	return `${days}d ago`;
 }
 
+function getFallbackNotificationPath(notification, effectiveRole) {
+	if (notification.type === "booking_created") {
+		return "/tutor/sessions";
+	}
+
+	if (
+		notification.type === "booking_status_updated" ||
+		notification.type === "booking_cancelled"
+	) {
+		return "/student/sessions";
+	}
+
+	if (notification.type === "tutor_application_submitted") {
+		return "/admin/tutor-applications";
+	}
+
+	if (notification.type === "tutor_application_decision") {
+		return effectiveRole === "tutor"
+			? "/tutor/tutor-apply"
+			: "/student/tutor-apply";
+	}
+
+	return `/${effectiveRole}/dashboard`;
+}
+
+function getNotificationPath(notification, effectiveRole) {
+	const targetPath = notification.targetPath?.trim();
+
+	if (targetPath && /^\/[^/]/.test(targetPath)) {
+		return targetPath;
+	}
+
+	return getFallbackNotificationPath(notification, effectiveRole);
+}
+
 function NotificationBell() {
-	const { role } = useContext(AuthContext);
+	const { isAuthenticated, user, effectiveRole, switchView } =
+		useContext(AuthContext);
 	const navigate = useNavigate();
-	const isTutor = role === "tutor";
-	const { data } = useGetNotifications(isTutor);
+	const canShowNotifications =
+		isAuthenticated && ["student", "tutor", "admin"].includes(effectiveRole);
+	const { data } = useGetNotifications(canShowNotifications);
 	const { mutate: markRead } = useMarkNotificationRead();
 	const { mutate: markAllRead } = useMarkAllNotificationsRead();
 
-	if (!isTutor) return null;
+	if (!canShowNotifications) return null;
 
 	const items = data?.items ?? [];
 	const unreadCount = data?.unreadCount ?? 0;
 
 	const handleItemClick = (notification) => {
 		if (!notification.read) markRead(notification._id);
-		navigate("/tutor/sessions");
+
+		const targetPath = getNotificationPath(notification, effectiveRole);
+		// Coupled to backend targetPath prefixes: controller code emits /tutor or
+		// /student paths so dual-role users switch into the matching view first.
+		if (user?.role === "tutor" && targetPath.startsWith("/tutor")) {
+			switchView("tutor");
+		} else if (user?.role === "tutor" && targetPath.startsWith("/student")) {
+			switchView("student");
+		}
+
+		navigate(targetPath);
 	};
 
 	return (
@@ -62,7 +109,9 @@ function NotificationBell() {
 					) : null}
 				</button>
 			</DropdownMenuTrigger>
-			<DropdownMenuContent align="end" className="w-80">
+			<DropdownMenuContent
+				align="end"
+				className="w-80">
 				<DropdownMenuLabel className="flex items-center justify-between">
 					<span>Notifications</span>
 					{unreadCount > 0 ? (
@@ -78,33 +127,35 @@ function NotificationBell() {
 					) : null}
 				</DropdownMenuLabel>
 				<DropdownMenuSeparator />
-				{items.length === 0 ? (
-					<div className="px-3 py-6 text-center text-sm text-slate-500">
-						No notifications yet
-					</div>
-				) : (
-					items.map((notification) => (
-						<DropdownMenuItem
-							key={notification._id}
-							onSelect={() => handleItemClick(notification)}
-							className="flex cursor-pointer flex-col items-start gap-0.5 py-2">
-							<div className="flex w-full items-center justify-between gap-2">
-								<span className="text-sm font-semibold text-slate-900">
-									{notification.title}
+				<div className="max-h-[240px] overflow-y-auto">
+					{items.length === 0 ? (
+						<div className="px-3 py-6 text-center text-sm text-slate-500">
+							No notifications yet
+						</div>
+					) : (
+						items.map((notification) => (
+							<DropdownMenuItem
+								key={notification._id}
+								onSelect={() => handleItemClick(notification)}
+								className="flex cursor-pointer flex-col items-start gap-0.5 py-2">
+								<div className="flex w-full items-center justify-between gap-2">
+									<span className="text-sm font-semibold text-slate-900">
+										{notification.title}
+									</span>
+									{!notification.read ? (
+										<span className="h-2 w-2 rounded-full bg-blue-500" />
+									) : null}
+								</div>
+								<span className="text-xs text-slate-600 line-clamp-2">
+									{notification.message}
 								</span>
-								{!notification.read ? (
-									<span className="h-2 w-2 rounded-full bg-blue-500" />
-								) : null}
-							</div>
-							<span className="text-xs text-slate-600 line-clamp-2">
-								{notification.message}
-							</span>
-							<span className="text-[10px] text-slate-400">
-								{formatRelativeTime(notification.createdAt)}
-							</span>
-						</DropdownMenuItem>
-					))
-				)}
+								<span className="text-[10px] text-slate-400">
+									{formatRelativeTime(notification.createdAt)}
+								</span>
+							</DropdownMenuItem>
+						))
+					)}
+				</div>
 			</DropdownMenuContent>
 		</DropdownMenu>
 	);

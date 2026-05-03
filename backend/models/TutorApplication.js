@@ -63,6 +63,7 @@ const tutorApplicationSchema = new mongoose.Schema(
 						type: Number,
 						required: true,
 						min: 15,
+						max: 240,
 					},
 				},
 			],
@@ -78,16 +79,17 @@ const tutorApplicationSchema = new mongoose.Schema(
 			type: String,
 			required: [true, "Bio is required"],
 			trim: true,
-			maxlength: 500,
+			maxlength: 1000,
 		},
 		status: {
 			type: String,
-			enum: ["pending", "approved", "rejected"],
+			enum: ["pending", "approved", "rejected", "changes_requested"],
 			default: "pending",
 		},
 		adminNotes: {
 			type: String,
 			default: "",
+			maxlength: 1000,
 		},
 		aiScore: {
 			recommendation: {
