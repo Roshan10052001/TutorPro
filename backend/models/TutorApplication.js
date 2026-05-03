@@ -88,6 +88,7 @@ const tutorApplicationSchema = new mongoose.Schema(
 		adminNotes: {
 			type: String,
 			default: "",
+			maxlength: 1000,
 		},
 		aiScore: {
 			recommendation: {

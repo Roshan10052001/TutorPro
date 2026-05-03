@@ -30,6 +30,7 @@ const notificationSchema = new mongoose.Schema(
 		targetPath: {
 			type: String,
 			default: "",
+			match: [/^\/[a-zA-Z0-9/_?=&%-]*$/, "Invalid targetPath"],
 		},
 		read: {
 			type: Boolean,

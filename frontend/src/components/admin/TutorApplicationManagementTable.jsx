@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import DataTable from "../DataTable";
 import Modal from "../Modal";
@@ -17,20 +17,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-
-const STATUS_VARIANTS = {
-	pending: "bg-amber-100 text-amber-800",
-	approved: "bg-emerald-100 text-emerald-800",
-	rejected: "bg-rose-100 text-rose-800",
-	changes_requested: "bg-blue-100 text-blue-800",
-};
-
-const STATUS_LABELS = {
-	pending: "pending",
-	approved: "approved",
-	rejected: "rejected",
-	changes_requested: "changes requested",
-};
+import {
+	TUTOR_APPLICATION_STATUS_LABELS,
+	TUTOR_APPLICATION_STATUS_VARIANTS,
+} from "../../constants/tutorApplicationStatus";
 
 const AI_RECOMMENDATION_VARIANTS = {
 	approve: "bg-emerald-100 text-emerald-800",
@@ -74,18 +64,13 @@ function TutorApplicationManagementTable({
 	const applicationIdFromUrl = searchParams.get("application");
 
 	const isActionPending = isPending || isDeletingTutor || isDeletingUser;
-	const sortedApplications = useMemo(
-		() =>
-			[...applications].sort(
-				(a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
-			),
-		[applications],
-	);
 
 	useEffect(() => {
-		if (!applicationIdFromUrl || !sortedApplications.length) return;
+		if (!applicationIdFromUrl || !applications.length) return;
 
-		const application = sortedApplications.find(
+		// Intentional: notification deep-links keep ?application in the URL so
+		// refreshes or revisits re-open the requested modal until the user closes it.
+		const application = applications.find(
 			(item) => item._id === applicationIdFromUrl,
 		);
 
@@ -93,7 +78,7 @@ function TutorApplicationManagementTable({
 			setSuggestedNotes([]);
 			setSelectedApplication(application);
 		}
-	}, [applicationIdFromUrl, sortedApplications]);
+	}, [applicationIdFromUrl, applications]);
 
 	const handleOpenRequest = (application) => {
 		setSuggestedNotes([]);
@@ -263,8 +248,12 @@ function TutorApplicationManagementTable({
 			render: (application) => {
 				const status = application.status || "pending";
 				return (
-					<Badge className={STATUS_VARIANTS[status] || STATUS_VARIANTS.pending}>
-						{STATUS_LABELS[status] || status}
+					<Badge
+						className={
+							TUTOR_APPLICATION_STATUS_VARIANTS[status] ||
+							TUTOR_APPLICATION_STATUS_VARIANTS.pending
+						}>
+						{TUTOR_APPLICATION_STATUS_LABELS[status] || status}
 					</Badge>
 				);
 			},
@@ -274,8 +263,8 @@ function TutorApplicationManagementTable({
 			header: "Action",
 			render: (application) => (
 				<Button
-					type='button'
-					size='sm'
+					type="button"
+					size="sm"
 					onClick={() => handleOpenRequest(application)}>
 					{viewMode === "approved" ? "Manage" : "View"}
 				</Button>
@@ -285,14 +274,14 @@ function TutorApplicationManagementTable({
 
 	return (
 		<>
-			<Card className='mb-6'>
-				<CardContent className='p-6'>
+			<Card className="mb-6">
+				<CardContent className="p-6">
 					{heading ? (
-						<h2 className='mb-4 text-lg font-bold text-slate-900'>{heading}</h2>
+						<h2 className="mb-4 text-lg font-bold text-slate-900">{heading}</h2>
 					) : null}
 					<DataTable
 						columns={columns}
-						data={sortedApplications}
+						data={applications}
 						isLoading={isLoading}
 						emptyTitle={emptyTitle}
 						emptyText={emptyText}
@@ -303,8 +292,8 @@ function TutorApplicationManagementTable({
 			<Modal
 				isOpen={Boolean(selectedApplication)}
 				onClose={handleCloseRequest}
-				title='Tutor Application Request'
-				size='lg'>
+				title="Tutor Application Request"
+				size="lg">
 				{selectedApplication ? (
 					<div className='flex flex-col gap-4'>
 						<div className='flex flex-col gap-1.5'>

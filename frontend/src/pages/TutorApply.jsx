@@ -18,20 +18,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { buildSlotLabel, convertToMinutes } from "@/utils/functions";
-
-const STATUS_VARIANTS = {
-	pending: "bg-amber-100 text-amber-800",
-	approved: "bg-emerald-100 text-emerald-800",
-	rejected: "bg-rose-100 text-rose-800",
-	changes_requested: "bg-blue-100 text-blue-800",
-};
-
-const STATUS_LABELS = {
-	pending: "pending",
-	approved: "approved",
-	rejected: "rejected",
-	changes_requested: "changes requested",
-};
+import {
+	TUTOR_APPLICATION_STATUS_LABELS,
+	TUTOR_APPLICATION_STATUS_VARIANTS,
+} from "../constants/tutorApplicationStatus";
 
 const selectClass =
 	"flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20";
@@ -319,6 +309,8 @@ function TutorApply() {
 	useEffect(() => {
 		if (!applicationIdFromUrl || !tutorApplications.length) return;
 
+		// Intentional: notification deep-links keep ?application in the URL so
+		// refreshes or revisits re-open the requested modal until the user closes it.
 		const application = tutorApplications.find(
 			(item) => item._id === applicationIdFromUrl,
 		);
@@ -341,8 +333,11 @@ function TutorApply() {
 					const status = application.status || "pending";
 					return (
 						<Badge
-							className={STATUS_VARIANTS[status] || STATUS_VARIANTS.pending}>
-							{STATUS_LABELS[status] || status}
+							className={
+								TUTOR_APPLICATION_STATUS_VARIANTS[status] ||
+								TUTOR_APPLICATION_STATUS_VARIANTS.pending
+							}>
+							{TUTOR_APPLICATION_STATUS_LABELS[status] || status}
 						</Badge>
 					);
 				},
@@ -388,19 +383,19 @@ function TutorApply() {
 		<Layout
 			page={sidebarRole}
 			title='Tutor Applications'
-			subtitle='Review your submitted tutor applications and create a new one when needed.'
-			buttonText='New Application'
+			subtitle="Review your submitted tutor applications and create a new one when needed."
+			buttonText="New Application"
 			onButtonClick={handleOpenModal}>
 			<Card>
-				<CardContent className='p-6'>
-					<h2 className='mb-4 text-lg font-bold text-slate-900'>
+				<CardContent className="p-6">
+					<h2 className="mb-4 text-lg font-bold text-slate-900">
 						My Applications
 					</h2>
 					<DataTable
 						columns={columns}
 						data={tutorApplications}
 						isLoading={isApplicationsLoading}
-						emptyTitle='No tutor applications yet'
+						emptyTitle="No tutor applications yet"
 						emptyText='Click "New Application" to submit your first tutor application.'
 					/>
 				</CardContent>
@@ -414,25 +409,25 @@ function TutorApply() {
 						? "Edit Tutor Application"
 						: "Submit Tutor Application"
 				}
-				size='lg'>
+				size="lg">
 				<form
-					className='flex flex-col gap-4'
+					className="flex flex-col gap-4"
 					onSubmit={handleSubmit}>
-					<div className='flex flex-col gap-1.5'>
+					<div className="flex flex-col gap-1.5">
 						<Label>Name</Label>
 						<Input
-							type='text'
-							name='name'
+							type="text"
+							name="name"
 							value={formData.name}
 							readOnly
 							required
 						/>
 					</div>
 
-					<div className='flex flex-col gap-1.5'>
+					<div className="flex flex-col gap-1.5">
 						<Label>Email</Label>
 						<Input
-							type='email'
+							type="email"
 							name='email'
 							value={formData.email}
 							readOnly
@@ -664,21 +659,24 @@ function TutorApply() {
 			<Modal
 				isOpen={Boolean(selectedApplication)}
 				onClose={handleCloseApplication}
-				title='Tutor Application Request'
-				size='lg'>
+				title="Tutor Application Request"
+				size="lg">
 				{selectedApplication ? (
-					<div className='flex flex-col gap-4'>
-						<div className='flex flex-wrap items-center gap-3'>
+					<div className="flex flex-col gap-4">
+						<div className="flex flex-wrap items-center gap-3">
 							<Badge
 								className={
-									STATUS_VARIANTS[selectedApplication.status || "pending"] ||
-									STATUS_VARIANTS.pending
+									TUTOR_APPLICATION_STATUS_VARIANTS[
+										selectedApplication.status || "pending"
+									] || TUTOR_APPLICATION_STATUS_VARIANTS.pending
 								}>
-								{STATUS_LABELS[selectedApplication.status || "pending"] ||
+								{TUTOR_APPLICATION_STATUS_LABELS[
+									selectedApplication.status || "pending"
+								] ||
 									selectedApplication.status ||
 									"pending"}
 							</Badge>
-							<span className='text-sm text-slate-500'>
+							<span className="text-sm text-slate-500">
 								Submitted{" "}
 								{selectedApplication.createdAt
 									? new Date(selectedApplication.createdAt).toLocaleDateString()
@@ -686,76 +684,76 @@ function TutorApply() {
 							</span>
 						</div>
 
-						<div className='flex flex-col gap-1.5'>
+						<div className="flex flex-col gap-1.5">
 							<Label>Name</Label>
 							<Input
-								type='text'
+								type="text"
 								value={selectedApplication.name}
 								readOnly
 							/>
 						</div>
 
-						<div className='flex flex-col gap-1.5'>
+						<div className="flex flex-col gap-1.5">
 							<Label>Email</Label>
 							<Input
-								type='email'
+								type="email"
 								value={selectedApplication.email}
 								readOnly
 							/>
 						</div>
 
-						<div className='flex flex-col gap-1.5'>
+						<div className="flex flex-col gap-1.5">
 							<Label>Course You Want to Teach</Label>
 							<Input
-								type='text'
+								type="text"
 								value={selectedApplication.course}
 								readOnly
 							/>
 						</div>
 
-						<div className='flex flex-col gap-1.5'>
+						<div className="flex flex-col gap-1.5">
 							<Label>Bio</Label>
 							<textarea
-								className='flex min-h-[96px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm outline-none'
+								className="flex min-h-[96px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm outline-none"
 								value={selectedApplication.bio || ""}
-								rows='4'
+								rows="4"
 								readOnly
 							/>
 						</div>
 
-						<div className='flex flex-col gap-1.5'>
+						<div className="flex flex-col gap-1.5">
 							<Label>Availability</Label>
 
 							{selectedApplication.availability?.length ? (
-								<div className='flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-3'>
+								<div className="flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-3">
 									{selectedApplication.availability.map((slot, index) => (
 										<div
 											key={`${slot.day}-${slot.startTime}-${slot.endTime}-${index}`}
-											className='rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700'>
+											className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
 											{slot.day}: {slot.startTime} - {slot.endTime} •{" "}
 											{slot.sessionLengthMinutes} min sessions
 										</div>
 									))}
 								</div>
 							) : (
-								<div className='rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500'>
+								<div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
 									No availability provided.
 								</div>
 							)}
 						</div>
 
-						<div className='flex flex-col gap-1.5'>
+						<div className="flex flex-col gap-1.5">
 							<Label>Admin Comments</Label>
-							<div className='min-h-[88px] rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700'>
+							<div className="min-h-[88px] rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
 								{selectedApplication.adminNotes?.trim() ||
 									"No admin comments yet."}
 							</div>
 						</div>
 						{selectedApplication.status === "changes_requested" && (
 							<Button
-								type='button'
+								type="button"
 								onClick={() => handleEditApplication(selectedApplication)}
-								className='w-full'>
+								className="w-full">
 								Edit and Resubmit
 							</Button>
 						)}

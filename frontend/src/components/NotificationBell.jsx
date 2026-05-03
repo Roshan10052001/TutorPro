@@ -83,6 +83,8 @@ function NotificationBell() {
 		if (!notification.read) markRead(notification._id);
 
 		const targetPath = getNotificationPath(notification, effectiveRole);
+		// Coupled to backend targetPath prefixes: controller code emits /tutor or
+		// /student paths so dual-role users switch into the matching view first.
 		if (user?.role === "tutor" && targetPath.startsWith("/tutor")) {
 			switchView("tutor");
 		} else if (user?.role === "tutor" && targetPath.startsWith("/student")) {
@@ -96,26 +98,26 @@ function NotificationBell() {
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
 				<button
-					type='button'
-					className='relative inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-					aria-label='Notifications'>
-					<Bell className='h-5 w-5' />
+					type="button"
+					className="relative inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+					aria-label="Notifications">
+					<Bell className="h-5 w-5" />
 					{unreadCount > 0 ? (
-						<span className='absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-xs font-semibold text-white'>
+						<span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-xs font-semibold text-white">
 							{unreadCount > 9 ? "9+" : unreadCount}
 						</span>
 					) : null}
 				</button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent
-				align='end'
-				className='w-80'>
-				<DropdownMenuLabel className='flex items-center justify-between'>
+				align="end"
+				className="w-80">
+				<DropdownMenuLabel className="flex items-center justify-between">
 					<span>Notifications</span>
 					{unreadCount > 0 ? (
 						<button
-							type='button'
-							className='text-xs font-medium text-blue-600 hover:underline'
+							type="button"
+							className="text-xs font-medium text-blue-600 hover:underline"
 							onClick={(e) => {
 								e.preventDefault();
 								markAllRead();
@@ -125,9 +127,9 @@ function NotificationBell() {
 					) : null}
 				</DropdownMenuLabel>
 				<DropdownMenuSeparator />
-				<div className='max-h-[240px] overflow-y-auto'>
+				<div className="max-h-[240px] overflow-y-auto">
 					{items.length === 0 ? (
-						<div className='px-3 py-6 text-center text-sm text-slate-500'>
+						<div className="px-3 py-6 text-center text-sm text-slate-500">
 							No notifications yet
 						</div>
 					) : (
@@ -135,19 +137,19 @@ function NotificationBell() {
 							<DropdownMenuItem
 								key={notification._id}
 								onSelect={() => handleItemClick(notification)}
-								className='flex cursor-pointer flex-col items-start gap-0.5 py-2'>
-								<div className='flex w-full items-center justify-between gap-2'>
-									<span className='text-sm font-semibold text-slate-900'>
+								className="flex cursor-pointer flex-col items-start gap-0.5 py-2">
+								<div className="flex w-full items-center justify-between gap-2">
+									<span className="text-sm font-semibold text-slate-900">
 										{notification.title}
 									</span>
 									{!notification.read ? (
-										<span className='h-2 w-2 rounded-full bg-blue-500' />
+										<span className="h-2 w-2 rounded-full bg-blue-500" />
 									) : null}
 								</div>
-								<span className='text-xs text-slate-600 line-clamp-2'>
+								<span className="text-xs text-slate-600 line-clamp-2">
 									{notification.message}
 								</span>
-								<span className='text-[10px] text-slate-400'>
+								<span className="text-[10px] text-slate-400">
 									{formatRelativeTime(notification.createdAt)}
 								</span>
 							</DropdownMenuItem>
