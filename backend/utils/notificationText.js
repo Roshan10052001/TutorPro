@@ -5,7 +5,7 @@ function sanitizeNotificationValue(value, maxLength = DEFAULT_MAX_LENGTH) {
 
 	const normalized = String(value)
 		.replace(/[\u0000-\u001F\u007F]/g, " ")
-		.replace(/[<>"'`]/g, "")
+		.replace(/[<>"'`^]/g, "")
 		.replace(/\s+/g, " ")
 		.trim();
 
