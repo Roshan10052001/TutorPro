@@ -1,0 +1,41 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: tutorpro-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  backend:
+    build:
+      context: ./backend
+    container_name: tutorpro-backend
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    ports:
+      - "5050:5050"
+    environment:
+      NODE_ENV: production
+      PORT: 5050
+      MONGO_URI: mongodb://mongo:27017/tutorpro
+      JWT_SECRET: ${JWT_SECRET:-local_dev_secret}
+      JWT_EXPIRE: ${JWT_EXPIRE:-7d}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:5050
+    container_name: tutorpro-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  mongo_data:

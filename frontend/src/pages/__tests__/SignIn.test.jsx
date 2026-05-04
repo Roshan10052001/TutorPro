@@ -74,7 +74,7 @@ describe("SignIn page", () => {
 			role: "student",
 			token: "token-123",
 		});
-		expect(navigateMock).toHaveBeenCalledWith("/student-dashboard");
+		expect(navigateMock).toHaveBeenCalledWith("/student/dashboard");
 	});
 
 	it("does not navigate when login credentials are invalid", async () => {
@@ -148,6 +148,6 @@ describe("SignIn page", () => {
 			role: "tutor",
 			token: "token-456",
 		});
-		expect(navigateMock).toHaveBeenCalledWith("/tutor-dashboard");
+		expect(navigateMock).toHaveBeenCalledWith("/select-view");
 	});
 });
