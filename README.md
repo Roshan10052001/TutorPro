@@ -363,34 +363,6 @@ The team organized work through:
 - Merge conflict resolution
 - Iterative improvement based on project needs
 
-This workflow helped the team divide responsibilities, track progress, and deliver features step by step.
-
----
-
-## Bijay Kumar Chaudhary Roles and Responsibilities
-
-My contributions focused on frontend development, project structure, workflow improvement, CI/CD, and Dockerization.
-
-I worked on:
-
-- Building and improving the frontend user interface
-- Designing responsive pages and reusable UI sections
-- Improving the homepage layout, hero section, call-to-action, feature sections, and visual hierarchy
-- Enhancing card spacing, typography, and overall user experience
-- Improving the platform workflow from the user side
-- Supporting the Apply → Admin Approve → Book → Review flow
-- Helping maintain a clean project structure
-- Working with Git branches, pull requests, and merge conflict handling
-- Updating Jira boards and sprint progress
-- Adding CI/CD workflow support using GitHub Actions
-- Dockerizing the project workflow
-- Adding DockerHub publishing workflow
-- Helping prepare the project for demo, presentation, and final delivery
-
-My main focus was to make TutorPro look professional, work smoothly from the frontend, and become easier for the team to test, run, and maintain.
-
----
-
 ## Team Members and Contributions
 
 | Team Member | Contribution Area |
